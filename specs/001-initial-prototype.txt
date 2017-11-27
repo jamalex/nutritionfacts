@@ -1,0 +1,204 @@
+Author: Aron Fyodor Asor
+
+Nutritionfacts: Kolibri's telemetry server
+
+
+Table of Contents
+_________________
+
+1 Summary
+2 Background
+3 Goals
+4 Non-goals
+5 Plan
+.. 5.1 API
+.. 5.2 Implementation
+..... 5.2.1 technologies used
+..... 5.2.2 Internal data model
+6 Impact
+7 Risks
+8 Milestones
+9 Open questions
+
+
+1 Summary
+=========
+
+  Create a first pass server implementation of a telemetry server called
+  nutritionfacts, that accepts data from kolibri's ping command, and
+  stores it in a server.
+
+
+2 Background
+============
+
+  With the release of first public of Kolibri release coming up, we'll
+  need to start measuring our impact and usage around the world. A
+  'survey' of our install base's environment, such as OS, install
+  version, and user count would be helpful in improving our software.
+
+
+3 Goals
+=======
+
+  - Provide a simple endpoint for Kolibri 0.7+ installations to send
+    their information to.
+  - For 0.7, it should record:
+    - the 'instance id'
+    - kolibri version
+    - platform (windows, osx, linux)
+    - python version
+    - database id
+    - system id
+    - the mac address
+    - the date of the pingback from the kolibri server
+  - the data has to persist, and allow devs to add functionality in the
+    near future
+
+
+4 Non-goals
+===========
+
+  - this first pass implementation won't provide a UI to view the data.
+  - there will be no 'export' functionality yet. Everything is contained
+    in the DB for now.
+
+
+5 Plan
+======
+
+5.1 API
+~~~~~~~
+
+  There will be a new app in the learningequality github org called
+  'nutritionfacts', and a new domain under
+  nutritionfacts.learningequality.org for Kolibri installations to ping.
+
+  The ramenshop app will have a single endpoint exposed under
+  /api/v1/pingback, which accepts a POST request containing a JSON
+  object with the following attributes:
+
+  - instance_id: string (a unique identifier for this kolibri
+    installation)
+  - version: string (Kolibri's version)
+  - platform: string (a short string identifying the OS, e.g. windows,
+    osx, linux)
+  - sysversion: string (the python version running the Kolibri instance)
+  - database_id: string (??)
+  - macaddress: string (the mac address of the device running the
+    Kolibri instance)
+  - language: string (marked TODO for now)
+
+  The server would then respond with a 200 status code, and an empty
+  body.
+
+  When the request body contains a non-JSON object, the server will
+  respond with a 400 error code, with the message "Sorry, please send a
+  valid JSON object."
+
+  When the request body contains a JSON object with missing attributes,
+  the server will respond with a 200 status code, but save the missing
+  attributes with null values of its data type:
+
+  - an empty string ("") for string attributes
+  - zero (0) for int attributes
+  - false for boolean attributes
+
+
+5.2 Implementation
+~~~~~~~~~~~~~~~~~~
+
+  The server will be written in Python, using Django as the web
+  framework. The data will be stored in a PostgreSQL 10.1 database
+
+
+5.2.1 technologies used
+-----------------------
+
+* 5.2.1.1 Python and Django
+
+  The standard app development stack used by Learning Equality
+
+
+* 5.2.1.2 PostgreSQL 9.6
+
+
+* 5.2.1.3 Kubernetes
+
+
+5.2.2 Internal data model
+-------------------------
+
+  The main Django model would center around a Pingback class, with the
+  following fields:
+
+  ,----
+  | from django.db import models
+  | 
+  | 
+  | class Pingback(models.Model):
+  | 
+  |     # The unique identifier for this Kolibri instance
+  |     # TODO: what's the max length of the instance id?
+  |     instance_id = models.CharField(max_length=100)
+  | 
+  |     # What kolibri version is this ping from
+  |     kolibri_version = models.CharField(max_length=30)
+  | 
+  |     # The ping may be from an IPv6 address, whose max length is 45 characters
+  |     ip_address = models.CharField(max_length=45)
+  | 
+  |     # The operating system this Kolibri instance is running on
+  |     platform = models.CharField(max_length=10)
+  | 
+  |     # The python version running this Kolibri instance
+  |     python_version = models.CharField()
+  | 
+  |     # ??
+  |     database_id = models.CharField(max_length=50)
+  | 
+  |     # ??
+  |     system_id = models.CharField(max_length=50)
+  | 
+  |     # The date this ping has been received
+  |     saved_at = models.DateField(auto_now_add=True)
+  `----
+
+
+6 Impact
+========
+
+  nutritionfacts will have no impact for LE initially -- it's designed
+  to just be silently catching pingbacks from various Kolibri 0.7
+  installations. Instead, its value will come in once we move out of the
+  prototype. The data from its telemetry, such as where Kolibri is
+  mostly installed, will be valuable for both the implementations and
+  development team in the near future.
+
+  For users, developers will need to be mindful of users' privacy. We
+  will want to make sure that there's no user-identifiable information
+  present in the data we store, unless we intend for users to agree to a
+  privacy notice.
+
+
+7 Risks
+=======
+
+
+8 Milestones
+============
+
+
+9 Open questions
+================
+
+  - what does database_id and system_id represent?
+  - what name?
+    - lechon
+    - dinnerservice
+    - deliveries
+    - gluttonle
+    - suggestionbox
+    - digests
+    - potluck
+    - *nutritionfacts*
