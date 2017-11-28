@@ -74,7 +74,7 @@ _________________
   'nutritionfacts', and a new domain under
   nutritionfacts.learningequality.org for Kolibri installations to ping.
 
-  The ramenshop app will have a single endpoint exposed under
+  The nutritionfacts app will have a single endpoint exposed under
   /api/v1/pingback, which accepts a POST request containing a JSON
   object with the following attributes:
 
@@ -109,7 +109,7 @@ _________________
 ~~~~~~~~~~~~~~~~~~
 
   The server will be written in Python, using Django as the web
-  framework. The data will be stored in a PostgreSQL 10.1 database
+  framework. The data will be stored in a PostgreSQL 9.6 database
 
 
 5.2.1 technologies used
