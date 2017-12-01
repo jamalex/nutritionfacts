@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'nutritionfacts.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("DB_NAME") or "gonano",
+        'NAME': os.getenv("DATA_DB_NAME") or "gonano",
         'USER': os.getenv("DATA_DB_USER") or "nutritionfacts",
         'PASSWORD': os.getenv("DATA_DB_PASS") or "",
         'HOST': os.getenv("DATA_DB_HOST") or "127.0.0.1",
