@@ -26,7 +26,7 @@ SECRET_KEY = (os.getenv("DJANGO_SECRET_KEY") or
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -77,11 +77,11 @@ WSGI_APPLICATION = 'nutritionfacts.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("DB_NAME") or "nutritionfacts",
-        'USER': os.getenv("DB_USER") or "nutritionfacts",
-        'PASSWORD': os.getenv("DB_PASSWORD") or "",
-        'HOST': os.getenv("DB_HOST") or "127.0.0.1",
-        'PORT': os.getenv("DB_PORT") or "5432",
+        'NAME': os.getenv("DB_NAME") or "gonano",
+        'USER': os.getenv("DATA_DB_USER") or "nutritionfacts",
+        'PASSWORD': os.getenv("DATA_DB_PASS") or "",
+        'HOST': os.getenv("DATA_DB_HOST") or "127.0.0.1",
+        'PORT': os.getenv("DATA_DB_PORT") or "5432",
     }
 }
 
