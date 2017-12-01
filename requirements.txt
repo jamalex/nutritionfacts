@@ -1,0 +1,5 @@
+Django==2.0rc1
+pytz==2017.3
+psycopg2==2.7.3.2
+django-ipware==1.1.6
+waitress==1.1.0
