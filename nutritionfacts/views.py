@@ -26,7 +26,7 @@ def pingback(request):
         platform=payload.get("platform") or "",
         python_version=payload.get("sysversion") or "",
         database_id=payload.get("database_id") or "",
-        system_id=payload.get("system_id") or "",
+        node_id=payload.get("node_id") or "",
     )
 
     return HttpResponse("")
