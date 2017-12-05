@@ -29,3 +29,6 @@ class Pingback(models.Model):
 
     # The date this ping was received
     saved_at = models.DateTimeField(auto_now_add=True)
+
+    # How long the server has been running (in minutes)
+    uptime = models.IntegerField(blank=True, null=True)

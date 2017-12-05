@@ -22,11 +22,13 @@ def pingback(request):
     Pingback.objects.create(
         instance_id=payload.get("instance_id") or "",
         kolibri_version=payload.get("version") or "",
+        mode=payload.get("mode") or "",
         ip_address=get_trusted_ip(request) or get_ip(request),
         platform=payload.get("platform") or "",
         python_version=payload.get("sysversion") or "",
         database_id=payload.get("database_id") or "",
         node_id=payload.get("node_id") or "",
+        uptime=payload.get("uptime") or None,
     )
 
     return HttpResponse("")
