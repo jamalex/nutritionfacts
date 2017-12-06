@@ -32,3 +32,8 @@ def pingback(request):
     )
 
     return HttpResponse("")
+
+
+def health_check(request):
+
+    return HttpResponse("OK")
