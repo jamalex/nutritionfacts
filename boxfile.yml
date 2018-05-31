@@ -2,6 +2,8 @@ run.config:
   engine: python
   engine.config:
     runtime: python-3.6
+  # extra_packages:
+  #   - nginx
 
 data.db:
   image: nanobox/postgresql:9.5
@@ -10,8 +12,16 @@ data.db:
 web.main:
   start:
     django: python server.py
+    # nginx: nginx -c /app/etc/nginx.conf
+    # django: gunicorn -c /app/etc/gunicorn.py /app/wsgi.py
+  writable_dirs:
+    - geoipdata
+    - tmp
 
 deploy.config:
+  extra_steps:
+    - python manage.py collectststatic --noinput --clear
+    - geoipdata/update_geoip.sh
   before_live:
     web.main:
       - python manage.py migrate
