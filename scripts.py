@@ -49,3 +49,6 @@ for single_date in daterange(start_date, end_date):
 # First timestamp for each Instance ID 
 Pingback.objects.filter(kolibri_version="0.7.0").values("instance_id").distinct().annotate(first_seen=Min("saved_at"))        
 
+
+# how many DB clones?
+Pingback.objects.filter(mode="").values("database_id", "instance_id").distinct().annotate(Count("instance_id")).order_by("-instance_id__count").values_list("instance_id__count", "database_id").distinct()

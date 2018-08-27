@@ -20,7 +20,7 @@ web.main:
 
 deploy.config:
   extra_steps:
-    - python manage.py collectststatic --noinput --clear
+    # - python manage.py collectststatic --noinput --clear
     - geoipdata/update_geoip.sh
   before_live:
     web.main:
