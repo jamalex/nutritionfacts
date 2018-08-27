@@ -1,16 +1,15 @@
 from django.db import models
 
-from .geo import get_ip_info
-
-# SPECIAL_HOST_MODES = {
-#     "ucsd.edu": "ucsd",
-#     ""
-# }
+SPECIAL_HOST_MODES = {
+    "ucsd.edu": "ucsd",
+}
 
 class Pingback(models.Model):
 
     # The unique identifier for this Kolibri instance
-    instance_id = models.CharField(max_length=32)
+    instance_id_old = models.CharField(max_length=32)
+
+    instance = models.ForeignKey("Instance", blank=True, null=True, on_delete=models.PROTECT)
 
     # What Kolibri version is this ping from
     kolibri_version = models.CharField(max_length=50)
@@ -33,19 +32,43 @@ class Pingback(models.Model):
     node_id = models.CharField(max_length=32, blank=True)
 
     # The date this ping was received
-    saved_at = models.DateTimeField(auto_now_add=True)
+    saved_at = models.DateTimeField()
 
     # How long the server has been running (in minutes)
     uptime = models.IntegerField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        self.ip_id = self.ip_id or self.ip_address
-        try:
-            ip = self.ip
-        except IPLocation.DoesNotExist:
-            self.ip = IPLocation.objects.create(ip_address=self.ip_id, **get_ip_info(self.ip_id))
+
+        # if a mode wasn't specified, check whether it matches any of the host-based mappings
+        if not self.mode:
+            for host in SPECIAL_HOST_MODES:
+                if host in self.ip.host:
+                    self.mode = SPECIAL_HOST_MODES[host]
+                    break
 
         super(Pingback, self).save(*args, **kwargs)
+
+
+class Instance(models.Model):
+
+    # The unique identifier for this Kolibri instance
+    instance_id = models.CharField(max_length=32, primary_key=True)
+
+    # The operating system this Kolibri instance is running on
+    platform = models.CharField(max_length=150, blank=True)
+
+    # The python version running this Kolibri instance
+    python_version = models.CharField(max_length=100, blank=True)
+
+    # The database-specific id of the Kolibri instance
+    database_id = models.CharField(max_length=32, blank=True)
+
+    # The unique device identifier based on the MAC address
+    node_id = models.CharField(max_length=32, blank=True)
+
+    first_seen = models.DateTimeField(blank=True, null=True)
+
+    last_seen = models.DateTimeField(blank=True, null=True)
 
 
 class IPLocation(models.Model):
