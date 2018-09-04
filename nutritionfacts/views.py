@@ -61,17 +61,12 @@ def pingback(request):
 
     # create the Pingback objects itself
     Pingback.objects.create(
-        instance_id_old=instance_id,
         instance=instance,
+        ip=iplocation,
         kolibri_version=kolibri_version,
         mode=mode,
-        ip=iplocation,
-        platform=payload.get("platform") or "",
-        python_version=payload.get("sysversion") or "",
-        database_id=payload.get("database_id") or "",
-        node_id=payload.get("node_id") or "",
-        uptime=payload.get("uptime") or None,
         saved_at=saved_at,
+        uptime=payload.get("uptime") or None,
     )
 
     return HttpResponse("")
