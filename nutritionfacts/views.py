@@ -10,6 +10,12 @@ from django.views.decorators.http import require_http_methods
 from .geo import get_ip_info
 from .models import Pingback, IPLocation, Instance
 
+
+SPECIAL_HOST_MODES = {
+    "ucsd.edu": "ucsd",
+}
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def pingback(request):
@@ -26,7 +32,19 @@ def pingback(request):
     ip_address = get_trusted_ip(request) or get_ip(request)
     iplocation, _ = IPLocation.objects.update_or_create(ip_address=ip_address, defaults=get_ip_info(ip_address))
 
-    # build an Instance objects if we don't already have one, and update timestamps
+    # extract the mode specified in the payload
+    mode = payload.get("mode") or ""
+    # check whether it's a dev version and mark mode as "dev"
+    if not mode and "dev" in kolibri_version:
+        mode = "dev"
+    # check whether it matches any of the host-based mappings
+    if not mode:
+        for host in SPECIAL_HOST_MODES:
+            if host in iplocation.host:
+                mode = SPECIAL_HOST_MODES[host]
+                break
+
+    # build an Instance object if we don't already have one, and update timestamps
     instance_id = payload.get("instance_id")
     defaults = {
         "platform": payload.get("platform") or "",
@@ -38,6 +56,7 @@ def pingback(request):
     if created:
         instance.first_seen = saved_at
     instance.last_seen = saved_at
+    instance.last_mode = mode or instance.last_mode
     instance.save()
 
     # create the Pingback objects itself
@@ -45,7 +64,7 @@ def pingback(request):
         instance_id_old=instance_id,
         instance=instance,
         kolibri_version=kolibri_version,
-        mode=payload.get("mode") or ("dev" if "dev" in kolibri_version else ""),
+        mode=mode,
         ip=iplocation,
         platform=payload.get("platform") or "",
         python_version=payload.get("sysversion") or "",

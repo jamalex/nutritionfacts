@@ -1,8 +1,5 @@
 from django.db import models
 
-SPECIAL_HOST_MODES = {
-    "ucsd.edu": "ucsd",
-}
 
 class Pingback(models.Model):
 
@@ -37,17 +34,6 @@ class Pingback(models.Model):
     # How long the server has been running (in minutes)
     uptime = models.IntegerField(blank=True, null=True)
 
-    def save(self, *args, **kwargs):
-
-        # if a mode wasn't specified, check whether it matches any of the host-based mappings
-        if not self.mode:
-            for host in SPECIAL_HOST_MODES:
-                if host in self.ip.host:
-                    self.mode = SPECIAL_HOST_MODES[host]
-                    break
-
-        super(Pingback, self).save(*args, **kwargs)
-
 
 class Instance(models.Model):
 
@@ -69,6 +55,8 @@ class Instance(models.Model):
     first_seen = models.DateTimeField(blank=True, null=True)
 
     last_seen = models.DateTimeField(blank=True, null=True)
+
+    last_mode = models.CharField(max_length=30, blank=True)
 
 
 class IPLocation(models.Model):
