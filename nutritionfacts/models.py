@@ -3,6 +3,9 @@ from django.db import models
 
 class Pingback(models.Model):
 
+    class Meta:
+        verbose_name = "Pingback"
+
     instance = models.ForeignKey("Instance", blank=True, null=True, related_name="pingbacks", on_delete=models.PROTECT)
 
     ip = models.ForeignKey("IPLocation", blank=True, null=True, related_name="pingbacks", on_delete=models.PROTECT)
@@ -19,8 +22,14 @@ class Pingback(models.Model):
     # How long the server has been running (in minutes)
     uptime = models.IntegerField(blank=True, null=True)
 
+    def __str__(self):
+        return "{instance} from {ip} at {saved_at:%Y-%m-%d %H:%M}".format(instance=(self.instance_id or "?")[:6], ip=self.ip_id, saved_at=self.saved_at)
+
 
 class Instance(models.Model):
+
+    class Meta:
+        verbose_name = "Instance"
 
     # The unique identifier for this Kolibri instance
     instance_id = models.CharField(max_length=32, primary_key=True)
@@ -43,8 +52,13 @@ class Instance(models.Model):
 
     last_mode = models.CharField(max_length=30, blank=True)
 
+    def __str__(self):
+        return "{instance}, on {platform}, with Python {python}".format(instance=(self.instance_id or "?")[:6], platform=self.platform, python=self.python_version.split()[0])
 
 class IPLocation(models.Model):
+
+    class Meta:
+        verbose_name = "IP Location"
 
     # IPv6 addresses can be as long as 45 characters
     ip_address = models.CharField(max_length=45, primary_key=True)
@@ -61,3 +75,6 @@ class IPLocation(models.Model):
     postal_code = models.CharField(max_length=30, blank=True)
     time_zone = models.CharField(max_length=50, blank=True)
     host = models.CharField(max_length=250, blank=True)
+
+    def __str__(self):
+        return "{ip} in {city}, {country}".format(ip=self.ip_address, city=self.city or "?", country=self.country_name or "?")
