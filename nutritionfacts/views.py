@@ -2,13 +2,16 @@ import datetime
 import json
 from ipware.ip import get_trusted_ip, get_ip
 
-
+from django.db.models import Count
+from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .geo import get_ip_info
 from .models import Pingback, IPLocation, Instance
+from .decorators import json_response
 
 
 SPECIAL_HOST_MODES = {
@@ -75,3 +78,77 @@ def pingback(request):
 def health_check(request):
 
     return HttpResponse("OK")
+
+
+@json_response
+def countries(request):
+
+    instances = Instance.objects.filter(last_mode="")
+
+    ips = IPLocation.objects.filter(pingbacks__mode="")
+    results = ips.values("country_name").annotate(count=Count("pingbacks__instance_id", distinct=True))
+
+    countries = {}
+
+    for count, country in reversed(sorted([(result["count"], result["country_name"]) for result in results])):
+        if country:
+            countries[country] = count
+
+    return {
+        "country_total": len(countries),
+        "instance_total": instances.count(),
+        "country_counts": countries,
+    }
+
+
+def get_instance_stats_for_frequency(instances, frequency, running_average_weight=0.3):
+
+    frequency_durations = {
+        "day": 24 * 60 * 60,
+        "week": 24 * 60 * 60 * 7,
+        "month": 24 * 60 * 60 * 30.44,
+    }
+
+    assert frequency in frequency_durations
+
+    now = timezone.now()
+
+    history = list(
+        instances.annotate(interval=Trunc('first_seen', frequency))
+                 .values('interval')
+                 .annotate(instances=Count('instance_id'))
+                 .order_by("interval")
+                 .values_list("interval", "instances")
+    )
+
+    latest = history[-1]
+    elapsed = (now - latest[0]).total_seconds() / frequency_durations[frequency]
+    if elapsed <= 1:
+        projected = int(round(latest[1] / elapsed))
+        history.pop()
+    else:
+        projected = 0
+        latest = (None, 0)
+
+    running_average = history[0][1]
+    for period in history:
+        running_average = (period[1] * running_average_weight) + (running_average * (1 - running_average_weight))
+
+    return {
+        "history": [[timestamp.date(), count] for timestamp, count in history],
+        "running_average": int(round(running_average)),
+        "current_actual": latest[1],
+        "current_projected": projected,
+    }
+
+
+@json_response
+def timeline(request):
+
+    instances = Instance.objects.filter(last_mode="")
+
+    return {
+        "daily": get_instance_stats_for_frequency(instances, "day"),
+        "weekly": get_instance_stats_for_frequency(instances, "week"),
+        "monthly": get_instance_stats_for_frequency(instances, "month"),
+    }

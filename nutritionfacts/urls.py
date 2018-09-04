@@ -16,10 +16,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from .views import pingback, health_check
+from .views import pingback, health_check, countries, timeline
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/pingback", pingback, name="pingback"),
+    path("api/analytics/countries", countries, name="countries"),
+    path("api/analytics/timeline", timeline , name="timeline "),
     path("health_check", health_check, name="health_check"),
 ]
