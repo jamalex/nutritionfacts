@@ -114,30 +114,31 @@ def get_instance_stats_for_frequency(instances, frequency, running_average_weigh
     now = timezone.now()
 
     history = list(
-        instances.annotate(interval=Trunc('first_seen', frequency))
-                 .values('interval')
-                 .annotate(instances=Count('instance_id'))
-                 .order_by("interval")
-                 .values_list("interval", "instances")
+        instances.annotate(start=Trunc('first_seen', frequency))
+                 .values('start')
+                 .annotate(count=Count('instance_id'))
+                 .order_by("start")
     )
 
     latest = history[-1]
-    elapsed = (now - latest[0]).total_seconds() / frequency_durations[frequency]
+    elapsed = (now - latest["start"]).total_seconds() / frequency_durations[frequency]
     if elapsed <= 1:
-        projected = int(round(latest[1] / elapsed))
+        projected = int(round(latest["count"] / elapsed))
         history.pop()
     else:
         projected = 0
-        latest = (None, 0)
+        latest = {"start": None, "count": 0}
 
-    running_average = history[0][1]
+    running_average = history[0]["count"]
     for period in history:
-        running_average = (period[1] * running_average_weight) + (running_average * (1 - running_average_weight))
+        running_average = (period["count"] * running_average_weight) + (running_average * (1 - running_average_weight))
+        period["start"] = period["start"].date()
+        period["running_average"] = int(round(running_average))
 
     return {
-        "history": [[timestamp.date(), count] for timestamp, count in history],
+        "history": history,
         "running_average": int(round(running_average)),
-        "current_actual": latest[1],
+        "current_actual": latest["count"],
         "current_projected": projected,
     }
 
