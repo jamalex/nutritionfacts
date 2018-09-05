@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Kolibri Install Stats</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.3.0/Chart.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css" integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js" integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA==" crossorigin=""></script>
+<script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.46.0/mapbox-gl.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.46.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+      #map { height: 550px; }
+    </style>
+  </head>
+  <body>
+    <div style="width: 45%; height: 300px; float: left; padding-right: 100px;">
+      <canvas id="chart-monthly"></canvas>
+      <canvas id="chart-weekly"></canvas>
+      <canvas id="chart-daily"></canvas>
+    </div>
+    <div style="float: left; width: 45%;">
+      <div style="max-width: 45%; margin: 100px 0;">
+        <table id="statistics" class="table table-striped">
+        </table>
+      </div>
+      <div>
+        <i>Pingbacks over the past hour:</i>
+        <div id="map"></div>
+      </div>
+    </div>
+    <script>
+
+      function timeline_callback(data) {
+        draw_chart(data.monthly, "chart-monthly");
+        draw_chart(data.weekly, "chart-weekly");
+        draw_chart(data.daily, "chart-daily");
+      }
+
+      function countries_callback(data) {
+        add_statistic("Total installs", data.instance_total);
+        add_statistic("Total countries", data.country_total);
+        draw_map(data.last_hour_locations);
+      }
+
+      function draw_map(pins) {
+        var myIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/learningequality/kolibri-installer-android/develop/assets/logo.png',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+            popupAnchor: [-3, -76],
+        });
+
+        var mymap = L.map('map', {
+          zoomControl: false,
+          attributionControl: false
+        });
+        mymap.setView([21, 10], 2);
+        L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+          attribution: '',
+          maxZoom: 18,
+          id: 'mapbox.satellite',
+          accessToken: 'pk.eyJ1IjoiamFtaWVhbGV4YW5kcmUiLCJhIjoiY2psb28zMjFkMXZzOTNxbXhwMDR5eDg1YSJ9.zJyQIrzEWFQVu--G5TMMRg'
+        }).addTo(mymap);
+
+        pins.map(function(pin) { L.marker([pin.lat, pin.long], {icon: myIcon}).addTo(mymap); });
+      }
+
+      function add_statistic(title, value) {
+        var tableRef = document.getElementById('statistics');
+
+        var newRow = tableRef.insertRow(tableRef.rows.length);
+
+        newRow.insertCell(0).appendChild(document.createTextNode(title));
+        newRow.insertCell(1).appendChild(document.createTextNode(value));
+
+      }
+
+      function draw_chart(data, chart_id) {
+        var start = data.history.map(function(val) { return val.start }).concat(["Current"]);
+        var running_average = data.history.map(function(val) { return val.running_average }).concat([data.running_average]);
+        var count = data.history.map(function(val) { return val.count }).concat(data.current_actual);
+        var projected = data.history.map(function(val) { return 0 }).concat([data.current_projected - data.current_actual]);
+
+        new Chart(document.getElementById(chart_id), {
+            type: 'bar',
+            data: {
+              labels: start,
+              datasets: [
+                {
+                  label: "Running average",
+                  type: "line",
+                  borderColor: "#5e5ea2",
+                  data: running_average,
+                  fill: false
+                }, {
+                  label: "Instances",
+                  type: "bar",
+                  backgroundColor: "rgba(150,0,0,0.4)",
+                  backgroundColorHover: "#3e95cd",
+                  data: count
+                }, {
+                  label: "Projected",
+                  type: "bar",
+                  backgroundColor: "rgba(0,100,0,0.4)",
+                  backgroundColorHover: "#3e95cd",
+                  data: projected
+                }
+              ]
+            },
+            options: {
+              scales: {
+                xAxes: [{ stacked: true }],
+                yAxes: [{ stacked: true }]
+              },
+              title: {
+                display: false,
+                text: 'Population growth (millions): Europe & Africa'
+              },
+              legend: { display: false },
+              maintainAspectRatio: false
+            }
+        });
+      }
+    </script>
+
+    <script src="https://telemetry.learningequality.org/api/analytics/timeline?callback=timeline_callback"></script>
+    <script src="https://telemetry.learningequality.org/api/analytics/countries?callback=countries_callback"></script>
+
+  </body>
+</html>

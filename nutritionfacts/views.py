@@ -94,9 +94,14 @@ def countries(request):
         if country:
             countries[country] = count
 
+    date_from = datetime.datetime.now() - datetime.timedelta(hours=1)
+    pingbacks = Pingback.objects.filter(saved_at__gte=date_from).values("ip__latitude", "ip__longitude")
+    pingback_locations = [{"lat": p["ip__latitude"], "long": p["ip__longitude"]} for p in pingbacks]
+
     return {
         "country_total": len(countries),
         "instance_total": instances.count(),
+        "last_hour_locations": pingback_locations,
         "country_counts": countries,
     }
 
