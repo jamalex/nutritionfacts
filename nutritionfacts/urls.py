@@ -17,12 +17,13 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from .views import pingback, health_check, countries, timeline
+from .views import pingback, health_check, countries, timeline, statistics
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('chart/', TemplateView.as_view(template_name='chart.html')),
     path("api/v1/pingback", pingback, name="pingback"),
+    path("api/v1/statistics", statistics, name="statistics"),
     path("api/analytics/countries", countries, name="countries"),
     path("api/analytics/timeline", timeline , name="timeline "),
     path("health_check", health_check, name="health_check"),

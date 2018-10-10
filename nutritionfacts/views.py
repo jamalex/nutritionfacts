@@ -10,8 +10,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .geo import get_ip_info
-from .models import Pingback, IPLocation, Instance
+from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics
 from .decorators import json_response
+from .utils import load_zipped_json
 
 
 SPECIAL_HOST_MODES = {
@@ -21,9 +22,10 @@ SPECIAL_HOST_MODES = {
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@json_response
 def pingback(request):
     try:
-        payload = json.loads(request.body.decode('utf-8'))
+        payload = load_zipped_json(request.body)
     except ValueError:
         return HttpResponseBadRequest("Sorry, please send a valid JSON object.")
 
@@ -63,7 +65,7 @@ def pingback(request):
     instance.save()
 
     # create the Pingback objects itself
-    Pingback.objects.create(
+    pingback = Pingback.objects.create(
         instance=instance,
         ip=iplocation,
         kolibri_version=kolibri_version,
@@ -72,7 +74,70 @@ def pingback(request):
         uptime=payload.get("uptime") or None,
     )
 
-    return HttpResponse("")
+    return {"id": pingback.id}
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@json_response
+def statistics(request):
+
+    try:
+        payload = load_zipped_json(request.body)
+    except ValueError:
+        return HttpResponseBadRequest("Sorry, please send a valid JSON object.")
+
+    # get the client IP address so we can ensure it's the same as the pingback
+    ip_address = get_trusted_ip(request) or get_ip(request)
+
+    pingback = Pingback.objects.get(id=payload["pi"], ip_id=ip_address)
+
+    channels = payload.get("c", [])
+    facilities = payload.get("f", [])
+
+    for channel in channels:
+        ChannelStatistics.objects.create(
+            pingback=pingback,
+            channel_id=channel["ci"],
+            version=channel.get("v"),
+            updated=channel.get("u"),
+            popular_ids=channel.get("pi", []),
+            popular_counts=channel.get("pc", []),
+            storage=channel.get("s"),
+            summ_started=channel.get("ss"),
+            summ_complete=channel.get("sc"),
+            sess_kinds=channel.get("sk", {}),
+            sess_user_count=channel.get("suc"),
+            sess_anon_count=channel.get("sac"),
+            sess_user_time=channel.get("sut"),
+            sess_anon_time=channel.get("sat"),
+        )
+
+    for facility in facilities:
+        FacilityStatistics.objects.create(
+            pingback=pingback,
+            facility_id=facility["fi"],
+            learners_count=facility.get("lc"),
+            learner_login_count=facility.get("llc"),
+            coaches_count=facility.get("cc"),
+            coach_login_count=facility.get("clc"),
+            first=facility.get("f"),
+            last=facility.get("l"),
+            summ_started=facility.get("ss"),
+            summ_complete=facility.get("sc"),
+            sess_kinds=facility.get("sk", {}),
+            lesson_count=facility.get("lec"),
+            exam_count=facility.get("ec"),
+            exam_log_count=facility.get("elc"),
+            att_log_count=facility.get("alc"),
+            exam_att_log_count=facility.get("ealc"),
+            sess_user_count=facility.get("suc"),
+            sess_anon_count=facility.get("sac"),
+            sess_user_time=facility.get("sut"),
+            sess_anon_time=facility.get("sat"),
+        )
+
+    return {}
 
 
 def health_check(request):

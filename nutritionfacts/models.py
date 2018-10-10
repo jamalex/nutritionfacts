@@ -1,5 +1,5 @@
+from django.contrib.postgres.fields import ArrayField, JSONField
 from django.db import models
-
 
 class Pingback(models.Model):
 
@@ -13,7 +13,7 @@ class Pingback(models.Model):
     # What Kolibri version is this ping from
     kolibri_version = models.CharField(max_length=50)
 
-    # the "mode" the Kolibri instance is running in (e.g. "source", "demo", "production")
+    # The "mode" the Kolibri instance is running in (e.g. "source", "demo", "production")
     mode = models.CharField(max_length=30, blank=True)
 
     # The date this ping was received
@@ -78,3 +78,66 @@ class IPLocation(models.Model):
 
     def __str__(self):
         return "{ip} in {city}, {country}".format(ip=self.ip_address, city=self.city or "?", country=self.country_name or "?")
+
+
+class ChannelStatistics(models.Model):
+
+    pingback = models.ForeignKey(Pingback, on_delete=models.PROTECT)
+
+    # top-level info about channel
+    channel_id = models.CharField(max_length=10)
+    version = models.IntegerField(blank=True, null=True)
+    updated = models.DateField(blank=True, null=True)
+
+    # content_id's and view counts of most popular content from this channel
+    popular_ids = ArrayField(models.CharField(max_length=10), default=list)
+    popular_counts = ArrayField(models.IntegerField(), default=list)
+
+    # storage used by channel, in MB
+    storage = models.IntegerField(blank=True, null=True)
+
+    # aggregate info about content summary logs
+    summ_started = models.IntegerField(blank=True, null=True)
+    summ_complete = models.IntegerField(blank=True, null=True)
+    sess_kinds = JSONField(default=dict)
+
+    # aggregate info about content session logs
+    sess_user_count = models.IntegerField(blank=True, null=True)
+    sess_anon_count = models.IntegerField(blank=True, null=True)
+    sess_user_time = models.IntegerField(blank=True, null=True)
+    sess_anon_time = models.IntegerField(blank=True, null=True)
+
+
+class FacilityStatistics(models.Model):
+
+    pingback = models.ForeignKey(Pingback, on_delete=models.PROTECT)
+
+    facility_id = models.CharField(max_length=10)
+
+    # info about users by kind (how many, and how long spent logged in)
+    learners_count = models.IntegerField(blank=True, null=True)
+    learner_login_count = models.IntegerField(blank=True, null=True)
+    coaches_count = models.IntegerField(blank=True, null=True)
+    coach_login_count = models.IntegerField(blank=True, null=True)
+
+    # dates for the first and last logs for the facility
+    first = models.CharField(max_length=10, blank=True)
+    last = models.CharField(max_length=10, blank=True)
+
+    # aggregate info about content summary logs
+    summ_started = models.IntegerField(blank=True, null=True)
+    summ_complete = models.IntegerField(blank=True, null=True)
+    sess_kinds = JSONField(default=dict)
+
+    # info about exams and lessons and attempts
+    lesson_count = models.IntegerField(blank=True, null=True)
+    exam_count = models.IntegerField(blank=True, null=True)
+    exam_log_count = models.IntegerField(blank=True, null=True)
+    att_log_count = models.IntegerField(blank=True, null=True)
+    exam_att_log_count = models.IntegerField(blank=True, null=True)
+
+    # aggregate info about content session logs
+    sess_user_count = models.IntegerField(blank=True, null=True)
+    sess_anon_count = models.IntegerField(blank=True, null=True)
+    sess_user_time = models.IntegerField(blank=True, null=True)
+    sess_anon_time = models.IntegerField(blank=True, null=True)
