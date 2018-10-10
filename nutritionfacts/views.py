@@ -85,7 +85,12 @@ def pingback(request):
         uptime=payload.get("uptime") or None,
     )
 
-    return {"id": pingback.id}
+    # for backwards compatibility purposes, we can't send JSON to pre-0.11 versions of Kolibri, so check here
+    ver = kolibri_version.split(".")
+    if len(ver) < 3 or (int(ver[0]) == 0 and int(ver[1]) < 11):
+        return HttpResponse("")
+    else:
+        return {"id": pingback.id}
 
 
 @csrf_exempt
