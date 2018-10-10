@@ -19,6 +19,13 @@ SPECIAL_HOST_MODES = {
     "ucsd.edu": "ucsd",
 }
 
+SPECIAL_IP_MODES = {
+    "122.52.49.75": "mrpau-forgot",
+    "152.115.135.138": "benjaoming-forgot",
+    "213.140.87.3": "benjaoming-forgot",
+    "80.71.142.169": "benjaoming-forgot",
+}
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -42,11 +49,15 @@ def pingback(request):
     # check whether it's a dev version and mark mode as "dev"
     if not mode and "dev" in kolibri_version:
         mode = "dev"
-    # check whether it matches any of the host-based mappings
+    # check whether it matches any of the host-based or ip-based mappings
     if not mode:
         for host in SPECIAL_HOST_MODES:
             if host in iplocation.host:
                 mode = SPECIAL_HOST_MODES[host]
+                break
+        for ip in SPECIAL_IP_MODES:
+            if ip == ip_address:
+                mode = SPECIAL_IP_MODES[ip]
                 break
 
     # build an Instance object if we don't already have one, and update timestamps
