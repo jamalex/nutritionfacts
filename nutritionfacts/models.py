@@ -16,6 +16,12 @@ class Pingback(models.Model):
     # The "mode" the Kolibri instance is running in (e.g. "source", "demo", "production")
     mode = models.CharField(max_length=30, blank=True)
 
+    # The language value under device settings
+    language = models.CharField(max_length=15, blank=True)
+
+    # The timezone the server is set to
+    timezone = models.CharField(max_length=40, blank=True)
+
     # The date this ping was received
     saved_at = models.DateTimeField()
 
@@ -113,6 +119,8 @@ class FacilityStatistics(models.Model):
     pingback = models.ForeignKey(Pingback, on_delete=models.PROTECT)
 
     facility_id = models.CharField(max_length=10)
+
+    settings = JSONField(default=dict)
 
     # info about users by kind (how many, and how long spent logged in)
     learners_count = models.IntegerField(blank=True, null=True)
