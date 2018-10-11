@@ -81,6 +81,8 @@ def pingback(request):
         ip=iplocation,
         kolibri_version=kolibri_version,
         mode=mode,
+        language=payload.get("language", ""),
+        timezone=payload.get("timezone", ""),
         saved_at=saved_at,
         uptime=payload.get("uptime") or None,
     )
@@ -133,6 +135,7 @@ def statistics(request):
         FacilityStatistics.objects.create(
             pingback=pingback,
             facility_id=facility["fi"],
+            settings=facility.get("s", {}),
             learners_count=facility.get("lc"),
             learner_login_count=facility.get("llc"),
             coaches_count=facility.get("cc"),
