@@ -13,6 +13,9 @@ class Pingback(models.Model):
     # What Kolibri version is this ping from
     kolibri_version = models.CharField(max_length=50)
 
+    # What installer type was used to install Kolibri
+    installer = models.CharField(max_length=30, blank=True)
+
     # The "mode" the Kolibri instance is running in (e.g. "source", "demo", "production")
     mode = models.CharField(max_length=30, blank=True)
 
@@ -27,6 +30,9 @@ class Pingback(models.Model):
 
     # How long the server has been running (in minutes)
     uptime = models.IntegerField(blank=True, null=True)
+
+    # The date on the sending device when this ping was sent (to check offsets)
+    server_timestamp = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return "{instance} from {ip} at {saved_at:%Y-%m-%d %H:%M}".format(instance=(self.instance_id or "?")[:6], ip=self.ip_id, saved_at=self.saved_at)

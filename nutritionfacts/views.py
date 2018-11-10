@@ -80,11 +80,13 @@ def pingback(request):
         instance=instance,
         ip=iplocation,
         kolibri_version=kolibri_version,
+        installer=payload.get("installer", ""),
         mode=mode,
         language=payload.get("language", ""),
         timezone=payload.get("timezone", ""),
         saved_at=saved_at,
         uptime=payload.get("uptime") or None,
+        server_timestamp=payload.get("timestamp") or None,
     )
 
     # for backwards compatibility purposes, we can't send JSON to pre-0.11 versions of Kolibri, so check here
