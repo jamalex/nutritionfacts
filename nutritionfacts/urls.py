@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from .views import pingback, health_check, countries, timeline, statistics
+from .views import pingback, health_check, countries, timeline, statistics, versions, migrations
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -26,5 +26,7 @@ urlpatterns = [
     path("api/v1/statistics", statistics, name="statistics"),
     path("api/analytics/countries", countries, name="countries"),
     path("api/analytics/timeline", timeline , name="timeline "),
+    path("api/analytics/versions", versions , name="versions "),
+    path("api/analytics/migrations", migrations , name="versions "),
     path("health_check", health_check, name="health_check"),
 ]

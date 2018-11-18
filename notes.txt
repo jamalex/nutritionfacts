@@ -1,0 +1,4 @@
+Changes over time:
+- First version to send Pingbacks was 0.7.0 (Dec 2017)
+- First version to send FacilityStatistics and ChannelStatistics was 0.11.0 (Nov 2018)
+- From ~Oct 17-Nov 17 2018, CloudFlare was set up to force HTTPS, which broke pinging for 0.7.x-0.9.x.

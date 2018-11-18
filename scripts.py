@@ -10,8 +10,8 @@ len(sorted(IPLocation.objects.filter(pingback__mode="").annotate(pingback_count=
 
 from nutritionfacts.models import *
 from django.db.models import Count
-ips = IPLocation.objects.filter(pingback__mode="").exclude(host__contains="ucsd.edu").exclude(host__contains="san.res.rr.com")
-results = ips.values("country_name").annotate(count=Count("pingback__instance_id", distinct=True))
+ips = IPLocation.objects.filter(pingbacks__mode="")
+results = ips.values("country_name").annotate(count=Count("pingbacks__instance_id", distinct=True))
 total_count = 0
 total_countries = 0
 for count, country in reversed(sorted([(result["count"], result["country_name"]) for result in results])):

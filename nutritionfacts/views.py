@@ -1,6 +1,8 @@
 import datetime
 import json
+import re
 from ipware.ip import get_trusted_ip, get_ip
+from collections import defaultdict
 
 from django.db.models import Count
 from django.db.models.functions import Trunc
@@ -13,18 +15,6 @@ from .geo import get_ip_info
 from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics
 from .decorators import json_response
 from .utils import load_zipped_json
-
-
-SPECIAL_HOST_MODES = {
-    "ucsd.edu": "ucsd",
-}
-
-SPECIAL_IP_MODES = {
-    "122.52.49.75": "mrpau-forgot",
-    "152.115.135.138": "benjaoming-forgot",
-    "213.140.87.3": "benjaoming-forgot",
-    "80.71.142.169": "benjaoming-forgot",
-}
 
 
 @csrf_exempt
@@ -51,14 +41,7 @@ def pingback(request):
         mode = "dev"
     # check whether it matches any of the host-based or ip-based mappings
     if not mode:
-        for host in SPECIAL_HOST_MODES:
-            if host in iplocation.host:
-                mode = SPECIAL_HOST_MODES[host]
-                break
-        for ip in SPECIAL_IP_MODES:
-            if ip == ip_address:
-                mode = SPECIAL_IP_MODES[ip]
-                break
+        mode = iplocation.get_inferred_mode()
 
     # build an Instance object if we don't already have one, and update timestamps
     instance_id = payload.get("instance_id")
@@ -169,7 +152,7 @@ def health_check(request):
 @json_response
 def countries(request):
 
-    instances = Instance.objects.filter(last_mode="")
+    instances = Instance.objects.all().filter(last_mode="")
 
     ips = IPLocation.objects.filter(pingbacks__mode="")
     results = ips.values("country_name").annotate(count=Count("pingbacks__instance_id", distinct=True))
@@ -182,7 +165,7 @@ def countries(request):
 
     date_from = datetime.datetime.now() - datetime.timedelta(hours=1)
     pingbacks = Pingback.objects.filter(saved_at__gte=date_from).values("ip__latitude", "ip__longitude")
-    pingback_locations = [{"lat": p["ip__latitude"], "long": p["ip__longitude"]} for p in pingbacks]
+    pingback_locations = [{"lat": p["ip__latitude"], "long": p["ip__longitude"]} for p in pingbacks if p["ip__latitude"]]
 
     return {
         "country_total": len(countries),
@@ -192,7 +175,7 @@ def countries(request):
     }
 
 
-def get_instance_stats_for_frequency(instances, frequency, running_average_weight=0.3):
+def get_instance_stats_for_frequency(instances, frequency, running_average_weight=0.3, periods=None):
 
     frequency_durations = {
         "day": 24 * 60 * 60,
@@ -211,15 +194,23 @@ def get_instance_stats_for_frequency(instances, frequency, running_average_weigh
                  .order_by("start")
     )
 
+    # if requested, only include the last X periods
+    if periods:
+        history = history[-periods:]
+
+    # check what portion of the latest time period has already elapsed
     latest = history[-1]
     elapsed = (now - latest["start"]).total_seconds() / frequency_durations[frequency]
     if elapsed <= 1:
+        # scale up projections according to how much of the period we still have to go
         projected = int(round(latest["count"] / elapsed))
         history.pop()
     else:
+        # in this case, we haven't seen anything yet in the current period, so it's all 0
         projected = 0
         latest = {"start": None, "count": 0}
 
+    # calculate running average
     running_average = history[0]["count"]
     for period in history:
         running_average = (period["count"] * running_average_weight) + (running_average * (1 - running_average_weight))
@@ -237,10 +228,55 @@ def get_instance_stats_for_frequency(instances, frequency, running_average_weigh
 @json_response
 def timeline(request):
 
-    instances = Instance.objects.filter(last_mode="")
+    instances = Instance.objects.all().filter(last_mode="")
 
     return {
-        "daily": get_instance_stats_for_frequency(instances, "day"),
-        "weekly": get_instance_stats_for_frequency(instances, "week"),
+        "daily": get_instance_stats_for_frequency(instances, "day", periods=21),
+        "weekly": get_instance_stats_for_frequency(instances, "week", periods=12),
         "monthly": get_instance_stats_for_frequency(instances, "month"),
     }
+
+
+@json_response
+def versions(request):
+
+    pingbacks = (Pingback.objects.filter(mode="").annotate(month=Trunc('saved_at', "month"))
+                 .values("month", "kolibri_version")
+                 .annotate(count=Count('instance_id', distinct=True))
+                 .order_by("month"))
+
+    by_month = defaultdict(dict)
+
+    vers = set()
+
+    for p in pingbacks:
+        version = re.findall(r"\d+\.\d+\.\d+", p["kolibri_version"])[0]
+        vers.add(tuple([int(c) for c in version.split(".")]))
+        counts = by_month[str(p["month"].date())]
+        counts[version] = counts.get(version, 0) + p["count"]
+
+    versions = [".".join([str(c) for c in ver]) for ver in sorted(vers)]
+
+    by_version = {ver: [vals.get(ver, 0) for vals in by_month.values()] for ver in versions}
+
+    colors = [ver[1] - 7 for ver in sorted(vers)]
+
+    return {
+        "by_month": by_month,
+        "by_version": by_version,
+        "months": list(by_month.keys()),
+        "colors": colors,
+    }
+
+
+@json_response
+def migrations(request):
+
+    instances = Instance.objects.filter(last_mode="").annotate(count=Count("pingbacks__ip__country_name", distinct=True)).filter(count__gt=1)
+
+    migrations = {}
+    for instance in instances:
+        mig = list(instance.pingbacks.values_list("ip__latitude", "ip__longitude"))
+        migrations[instance.instance_id] = ([mig[0]] if mig[0][0] else []) + [mig[i] for i in range(1, len(mig)) if mig[i] != mig[i-1] and mig[i][0]]
+
+    return migrations

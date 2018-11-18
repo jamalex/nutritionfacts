@@ -1,0 +1,31 @@
+SPECIAL_HOST_MODES = {
+    "ucsd.edu": "ucsd",
+}
+
+SPECIAL_IP_MODES = {
+    "110.54.201.82": "mrpau-forgot",
+    "122.52.49.75": "mrpau-forgot",
+    "124.107.126.114": "mrpau-forgot",
+    "137.110.": "ucsd",
+    "138.62.237.5": "benjaoming-forgot",
+    "151.237.82.39": "ivan-forgot",
+    "152.115.135.138": "benjaoming-forgot",
+    "180.190.": "mrpau-forgot",
+    "180.191.": "mrpau-forgot",
+    "188.254.167.138": "ivan-forgot",
+    "195.230.3.137": "ivan-forgot",
+    "212.178.235.161": "radina-forgot",
+    "213.140.87.3": "benjaoming-forgot",
+    "216.252.94.254": "ivan-forgot",
+    "2a02:8071:684:b700:34fa:7a59:a9fe:3233": "benjaoming-forgot",
+    "46.195.": "benjaoming-forgot",
+    "46.40.125.191": "ivan-forgot",
+    "49.149.27.143": "mrpau-forgot",
+    "66.75.242.9": "jamie-forgot",
+    "80.71.142.169": "benjaoming-forgot",
+    "87.116.4.30": "benjaoming-forgot",
+    "87.221.": "jose-forgot",
+    "87.246.27.182": "ivan-forgot",
+    "88.203.212.231": "ivan-forgot",
+    "91.148.92.103": "radina-forgot",
+}

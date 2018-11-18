@@ -1,6 +1,8 @@
 from django.contrib.postgres.fields import ArrayField, JSONField
 from django.db import models
 
+from . import mode_mappings
+
 class Pingback(models.Model):
 
     class Meta:
@@ -36,6 +38,21 @@ class Pingback(models.Model):
 
     def __str__(self):
         return "{instance} from {ip} at {saved_at:%Y-%m-%d %H:%M}".format(instance=(self.instance_id or "?")[:6], ip=self.ip_id, saved_at=self.saved_at)
+
+    def set_mode_from_ip_if_needed(self):
+        if self.mode:
+            return
+        mode = self.ip.get_inferred_mode()
+        if not mode:
+            return
+        self.mode = mode
+        self.save()
+        print("set mode on pingback {} to {}".format(self.id, mode))
+        instance = self.instance
+        if not instance.last_mode:
+            instance.last_mode = mode
+            instance.save()
+            print("set mode on instance {} to {}".format(instance.instance_id, mode))
 
 
 class Instance(models.Model):
@@ -90,6 +107,18 @@ class IPLocation(models.Model):
 
     def __str__(self):
         return "{ip} in {city}, {country}".format(ip=self.ip_address, city=self.city or "?", country=self.country_name or "?")
+
+    def get_inferred_mode(self):
+        mode = ""
+        for host in mode_mappings.SPECIAL_HOST_MODES:
+            if host in self.host:
+                mode = mode_mappings.SPECIAL_HOST_MODES[host]
+                break
+        for ip_prefix in mode_mappings.SPECIAL_IP_MODES:
+            if self.ip_address.startswith(ip_prefix):
+                mode = mode_mappings.SPECIAL_IP_MODES[ip_prefix]
+                break
+        return mode
 
 
 class ChannelStatistics(models.Model):
