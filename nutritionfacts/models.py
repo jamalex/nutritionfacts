@@ -184,3 +184,12 @@ class FacilityStatistics(models.Model):
     sess_anon_count = models.IntegerField(blank=True, null=True)
     sess_user_time = models.IntegerField(blank=True, null=True)
     sess_anon_time = models.IntegerField(blank=True, null=True)
+
+
+class Message(models.Model):
+    msg_id = models.CharField(max_length=50, primary_key=True)
+    timestamp = models.DateField()
+    version_range = models.CharField(max_length=50, blank=True)
+    link_url = models.CharField(max_length=150, blank=True)
+    active = models.BooleanField(default=True)
+    i18n = JSONField(default=dict)

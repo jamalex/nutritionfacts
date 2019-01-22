@@ -12,9 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .geo import get_ip_info
-from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics
+from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics, Message
 from .decorators import json_response
-from .utils import load_zipped_json
+from .utils import load_zipped_json, version_matches_range
 
 
 @csrf_exempt
@@ -73,11 +73,13 @@ def pingback(request):
     )
 
     # for backwards compatibility purposes, we can't send JSON to pre-0.11 versions of Kolibri, so check here
-    ver = kolibri_version.split(".")
-    if len(ver) < 3 or (int(ver[0]) == 0 and int(ver[1]) < 11):
+    if version_matches_range(kolibri_version, "<0.11.0"):
         return HttpResponse("")
-    else:
-        return {"id": pingback.id}
+
+    message_queryset = Message.objects.filter(active=True).exclude(version_range="").values("msg_id", "version_range", "link_url", "i18n", "timestamp")
+    messages = [msg for msg in message_queryset if version_matches_range(kolibri_version, msg["version_range"])]
+
+    return {"id": pingback.id, "messages": messages}
 
 
 @csrf_exempt
@@ -141,7 +143,7 @@ def statistics(request):
             sess_anon_time=facility.get("sat"),
         )
 
-    return {}
+    return {"messages": []}
 
 
 def health_check(request):
