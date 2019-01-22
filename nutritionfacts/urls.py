@@ -14,19 +14,22 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.conf.urls import url
 from django.views.generic import TemplateView
 
-from .views import pingback, health_check, countries, timeline, statistics, versions, migrations
+from .views import pingback, health_check, countries, timeline, statistics, versions, migrations, chart
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('chart/', TemplateView.as_view(template_name='chart.html')),
+    path('chart/', chart, name="chart"),
     path("api/v1/pingback", pingback, name="pingback"),
     path("api/v1/statistics", statistics, name="statistics"),
     path("api/analytics/countries", countries, name="countries"),
-    path("api/analytics/timeline", timeline , name="timeline "),
-    path("api/analytics/versions", versions , name="versions "),
+    path("api/analytics/timeline", timeline , name="timeline"),
+    path("api/analytics/versions", versions , name="versions"),
     path("api/analytics/migrations", migrations , name="versions "),
     path("health_check", health_check, name="health_check"),
+    url(r'^account/', include(('social_django.urls', 'nutritionfacts'), namespace='social')),
+    url(r'^account/', include(('django.contrib.auth.urls', 'nutritionfacts'), namespace='auth')),
 ]

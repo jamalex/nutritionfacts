@@ -20,9 +20,21 @@
         font-size: 14px;
         padding-bottom: 15px;
       }
+      #account-links {
+        position: absolute;
+        top: 5px;
+        right: 10px;
+      }
     </style>
   </head>
   <body>
+    <div id="account-links">
+      {% if request.user.is_authenticated %}
+        Logged in as: {{ request.user.email }} (<a href="{% url "auth:logout" %}?next=/chart/">logout</a>)
+      {% else %}
+        <a href="{% url "social:begin" "google-oauth2" %}?next=/chart/">Login with Google</a>
+      {% endif %}
+    </div>
     <div style="width: 45%; height: 250px; float: left; padding-right: 100px;">
       <canvas id="chart-monthly"></canvas>
       <div class="legend">Installations by month (since inception)</div>
@@ -273,10 +285,10 @@
 
     </script>
 
-    <script id="timeline_script" src="https://telemetry.learningequality.org/api/analytics/timeline?callback=timeline_callback"></script>
-    <script id="countries_script" src="https://telemetry.learningequality.org/api/analytics/countries?callback=countries_callback"></script>
-    <script id="versions_script" src="https://telemetry.learningequality.org/api/analytics/versions?callback=versions_callback"></script>
-    <script id="migrations_script" src="https://telemetry.learningequality.org/api/analytics/migrations?callback=migrations_callback"></script>
+    <script id="timeline_script" src="{{ TELEMETRY_DATA_DOMAIN }}/api/analytics/timeline?callback=timeline_callback&cachebuster=0"></script>
+    <script id="countries_script" src="{{ TELEMETRY_DATA_DOMAIN }}/api/analytics/countries?callback=countries_callback&cachebuster=0"></script>
+    <script id="versions_script" src="{{ TELEMETRY_DATA_DOMAIN }}/api/analytics/versions?callback=versions_callback&cachebuster=0"></script>
+    <script id="migrations_script" src="{{ TELEMETRY_DATA_DOMAIN }}/api/analytics/migrations?callback=migrations_callback&cachebuster=0"></script>
 
   </body>
 </html>

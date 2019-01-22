@@ -1,12 +1,15 @@
 import datetime
 import json
 import re
+
 from ipware.ip import get_trusted_ip, get_ip
 from collections import defaultdict
 
+from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.template.response import TemplateResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -15,6 +18,30 @@ from .geo import get_ip_info
 from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics, Message
 from .decorators import json_response
 from .utils import load_zipped_json, version_matches_range
+
+
+def login_required_ajax(function):
+    """
+    Just make sure the user is authenticated to access a certain ajax view
+
+    Otherwise return a HttpResponse 401 - authentication required
+    instead of the 302 redirect of the original Django decorator
+    """
+    def _decorator(view_func):
+
+        def _wrapped_view(request, *args, **kwargs):
+            if request.user.is_authenticated:
+                response = view_func(request, *args, **kwargs)
+            elif request.method == "OPTIONS":
+                response = HttpResponse("", status=200)
+            else:
+                response = HttpResponse("Unauthorized", status=401)
+            response["Access-Control-Allow-Origin"] = "*"
+            response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+            return response
+        return _wrapped_view
+
+    return _decorator(function)
 
 
 @csrf_exempt
@@ -151,6 +178,7 @@ def health_check(request):
     return HttpResponse("OK")
 
 
+@login_required_ajax
 @json_response
 def countries(request):
 
@@ -227,6 +255,7 @@ def get_instance_stats_for_frequency(instances, frequency, running_average_weigh
     }
 
 
+@login_required_ajax
 @json_response
 def timeline(request):
 
@@ -239,6 +268,7 @@ def timeline(request):
     }
 
 
+@login_required_ajax
 @json_response
 def versions(request):
 
@@ -271,6 +301,8 @@ def versions(request):
     }
 
 
+
+@login_required_ajax
 @json_response
 def migrations(request):
 
@@ -282,3 +314,9 @@ def migrations(request):
         migrations[instance.instance_id] = ([mig[0]] if mig[0][0] else []) + [mig[i] for i in range(1, len(mig)) if mig[i] != mig[i-1] and mig[i][0]]
 
     return migrations
+
+
+@login_required
+def chart(request):
+    domain = request.GET.get("domain", "https://telemetry.learningequality.org")
+    return TemplateResponse(request, "chart.html", {"request": request, "TELEMETRY_DATA_DOMAIN": domain})
