@@ -164,8 +164,8 @@ class FacilityStatistics(models.Model):
     coach_login_count = models.IntegerField(blank=True, null=True)
 
     # dates for the first and last logs for the facility
-    first = models.CharField(max_length=10, blank=True)
-    last = models.CharField(max_length=10, blank=True)
+    first_log = models.DateField(blank=True, null=True)
+    last_log = models.DateField(blank=True, null=True)
 
     # aggregate info about content summary logs
     summ_started = models.IntegerField(blank=True, null=True)
