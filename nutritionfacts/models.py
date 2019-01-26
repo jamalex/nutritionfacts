@@ -189,7 +189,7 @@ class FacilityStatistics(models.Model):
 class Message(models.Model):
     msg_id = models.CharField(max_length=50, primary_key=True)
     timestamp = models.DateField()
-    version_range = models.CharField(max_length=50, blank=True)
+    version_range = models.CharField(max_length=50, default="*")
     link_url = models.CharField(max_length=150, blank=True)
     active = models.BooleanField(default=True)
     i18n = JSONField(default=dict)
