@@ -15,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .geo import get_ip_info
-from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics, Message
+from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics, Message, StatisticsPingback
 from .decorators import json_response
 from .utils import load_zipped_json, version_matches_range
 
@@ -103,8 +103,22 @@ def pingback(request):
     if version_matches_range(kolibri_version, "<0.11.0"):
         return HttpResponse("")
 
+    # get all messages that are version-based and match the version that pinged us
     message_queryset = Message.objects.filter(active=True).exclude(version_range="").values("msg_id", "version_range", "link_url", "i18n", "timestamp")
     messages = [msg for msg in message_queryset if version_matches_range(kolibri_version, msg["version_range"])]
+
+    # add any test messages as needed
+    if mode.startswith("msg-"):
+        messages.append({
+            "msg_id": mode,
+            "version_range": "",
+            "link_url": "https://www.latlmes.com/arts/return-of-the-golden-age-of-comics-1",
+            "i18n": {
+                "en": {"link_text": "More information...", "msg": "You are now running with mode '{}'!".format(mode), "title": "Important!"},
+                "es-es": {"link_text": "Más información...", "msg": "¡Ahora estás corriendo con el modo '{}'!".format(mode), "title": "¡Importante!"},
+            },
+            "timestamp": datetime.date.today(),
+        })
 
     return {"id": pingback.id, "messages": messages}
 
@@ -119,10 +133,13 @@ def statistics(request):
     except ValueError:
         return HttpResponseBadRequest("Sorry, please send a valid JSON object.")
 
-    # get the client IP address so we can ensure it's the same as the pingback
-    ip_address = get_trusted_ip(request) or get_ip(request)
+    pingback = Pingback.objects.get(id=payload["pi"])
 
-    pingback = Pingback.objects.get(id=payload["pi"], ip_id=ip_address)
+    statspingback = StatisticsPingback.objects.create(
+        pingback=pingback,
+        ip_address=get_trusted_ip(request) or get_ip(request),
+        saved_at=datetime.datetime.now(),
+    )
 
     channels = payload.get("c", [])
     facilities = payload.get("f", [])
@@ -130,6 +147,7 @@ def statistics(request):
     for channel in channels:
         ChannelStatistics.objects.create(
             pingback=pingback,
+            statspingback=statspingback,
             channel_id=channel["ci"],
             version=channel.get("v"),
             updated=channel.get("u"),
@@ -148,6 +166,7 @@ def statistics(request):
     for facility in facilities:
         FacilityStatistics.objects.create(
             pingback=pingback,
+            statspingback=statspingback,
             facility_id=facility["fi"],
             settings=facility.get("s", {}),
             learners_count=facility.get("lc"),

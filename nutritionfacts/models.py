@@ -121,9 +121,20 @@ class IPLocation(models.Model):
         return mode
 
 
+class StatisticsPingback(models.Model):
+
+    # extra metadata to support debugging of
+    # https://sentry.io/organizations/learningequality/issues/858657624/
+    ip_address = models.CharField(max_length=45)
+    saved_at = models.DateTimeField(blank=True)
+    pingback = models.ForeignKey(Pingback, on_delete=models.PROTECT)
+
+
 class ChannelStatistics(models.Model):
 
     pingback = models.ForeignKey(Pingback, on_delete=models.PROTECT)
+
+    statspingback = models.ForeignKey(StatisticsPingback, on_delete=models.PROTECT, blank=True, null=True)
 
     # top-level info about channel
     channel_id = models.CharField(max_length=10)
@@ -152,6 +163,8 @@ class ChannelStatistics(models.Model):
 class FacilityStatistics(models.Model):
 
     pingback = models.ForeignKey(Pingback, on_delete=models.PROTECT)
+
+    statspingback = models.ForeignKey(StatisticsPingback, on_delete=models.PROTECT, blank=True, null=True)
 
     facility_id = models.CharField(max_length=10)
 
