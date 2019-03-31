@@ -64,10 +64,10 @@ class Instance(models.Model):
     instance_id = models.CharField(max_length=32, primary_key=True)
 
     # The operating system this Kolibri instance is running on
-    platform = models.CharField(max_length=150, blank=True)
+    platform = models.CharField(max_length=200, blank=True)
 
     # The python version running this Kolibri instance
-    python_version = models.CharField(max_length=100, blank=True)
+    python_version = models.CharField(max_length=300, blank=True)
 
     # The database-specific id of the Kolibri instance
     database_id = models.CharField(max_length=32, blank=True)

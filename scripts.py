@@ -1,15 +1,13 @@
 nanobox console nutritionfacts web.main
 
-python manage.py shell
+./manage.py shell_plus
 
-from nutritionfacts.models import *
 Pingback.objects.values("mode").distinct()
 
 len(sorted(IPLocation.objects.filter(pingback__mode="").annotate(pingback_count=Count("pingback")).filter(pingback_count__gt=5).values_list("pingback_count", flat=True)))
 
 
-from nutritionfacts.models import *
-from django.db.models import Count
+# total installations and total countries
 ips = IPLocation.objects.filter(pingbacks__mode="")
 results = ips.values("country_name").annotate(count=Count("pingbacks__instance_id", distinct=True))
 total_count = 0
@@ -52,3 +50,37 @@ Pingback.objects.filter(kolibri_version="0.7.0").values("instance_id").distinct(
 
 # how many DB clones?
 Pingback.objects.filter(mode="").values("database_id", "instance_id").distinct().annotate(Count("instance_id")).order_by("-instance_id__count").values_list("instance_id__count", "database_id").distinct()
+
+
+
+# How many users?
+FacilityStatistics.objects.filter(pingback__mode="").values("facility_id").distinct().annotate(Max("learners_count")).aggregate(Sum("learners_count__max"))
+
+sorted(FacilityStatistics.objects.filter(pingback__mode="").values("facility_id").distinct().annotate(Max("sess_user_count"), Max("learners_count"), Max("sess_anon_count")).values_list("learners_count__max", "sess_user_count__max", "sess_anon_count__max", "pingback__ip__country_name"))
+
+
+# how many per country for a particular day?
+Instance.objects.filter(first_seen__year=2019, first_seen__month=1, first_seen__day=4, last_mode="").values("pingbacks__ip__country_name").order_by("pingbacks__ip__country_name").annotate(count=Count("instance_id", distinct=True)).order_by("-count")
+
+Instance.objects.filter(first_seen__year=2019, first_seen__month=1, first_seen__day=4, last_mode="", pingbacks__ip__country_name="Nepal").values("pingbacks__ip_id")
+
+
+
+# most popular channels based on what's loaded (not based on what's viewed)
+channelstats = ChannelStatistics.objects.filter(pingback__mode="", storage__gt=0)
+counts = channelstats.values("channel_id").annotate(Count("pingback__instance_id", distinct=True)).order_by("-pingback__instance_id__count")
+print("from contentcuration.models import *")
+for channel_id, count in counts.values_list("channel_id", "pingback__instance_id__count"):
+	print("channel = Channel.objects.get(id__startswith='{}'); print channel.id, u'\\t', {}, u'\\t', channel.name.encode('utf-8'); ".format(channel_id, count), end="")
+# (then paste the results into a Studio shell)
+
+
+def mean(x):
+    return sum(x) / float(len(x))
+
+# average number of registered learners per pinging facility
+mean(sorted(facilitystats.values("facility_id").annotate(Max("learners_count")).values_list("learners_count__max", flat=True)))
+
+# average number of anonymous content sessions per pinging facility
+mean(sorted(facilitystats.values("facility_id").annotate(Max("sess_anon_count")).values_list("sess_anon_count__max", flat=True)))
+

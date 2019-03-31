@@ -28,4 +28,5 @@ SPECIAL_IP_MODES = {
     "87.246.27.182": "ivan-forgot",
     "88.203.212.231": "ivan-forgot",
     "91.148.92.103": "radina-forgot",
+    "34.73.222.70": "demo-forgot",
 }
