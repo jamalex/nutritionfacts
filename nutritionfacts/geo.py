@@ -3,9 +3,10 @@ import geoip2.database
 import geoip2.errors
 import socket
 
+
 @functools.lru_cache(maxsize=None)
 def get_reader():
-    return geoip2.database.Reader('/app/geoipdata/GeoLite2-City.mmdb')
+    return geoip2.database.Reader("/app/geoipdata/GeoLite2-City.mmdb")
 
 
 def get_ip_info(ip):
@@ -31,6 +32,4 @@ def get_ip_info(ip):
             "host": host,
         }
     except geoip2.errors.AddressNotFoundError:
-        return {
-            "host": host,
-        }
+        return {"host": host}

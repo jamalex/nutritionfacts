@@ -78,6 +78,8 @@ for channel_id, count in counts.values_list("channel_id", "pingback__instance_id
 def mean(x):
     return sum(x) / float(len(x))
 
+facilitystats = FacilityStatistics.objects.filter(pingback__mode="")
+
 # average number of registered learners per pinging facility
 mean(sorted(facilitystats.values("facility_id").annotate(Max("learners_count")).values_list("learners_count__max", flat=True)))
 

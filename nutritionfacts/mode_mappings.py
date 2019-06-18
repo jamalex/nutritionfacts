@@ -1,6 +1,4 @@
-SPECIAL_HOST_MODES = {
-    "ucsd.edu": "ucsd",
-}
+SPECIAL_HOST_MODES = {"ucsd.edu": "ucsd"}
 
 SPECIAL_IP_MODES = {
     "110.54.201.82": "mrpau-forgot",

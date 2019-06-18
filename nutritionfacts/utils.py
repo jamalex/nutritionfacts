@@ -9,18 +9,23 @@ def load_zipped_json(data):
         data = zlib.decompress(data)
     except:
         pass
-    return json.loads(data.decode('utf-8'))
+    return json.loads(data.decode("utf-8"))
 
 
 def version_matches_range(version, version_range):
 
     # if no version range is provided, assume we don't have opinions about the version
-    if not version_range or version_range == '*':
+    if not version_range or version_range == "*":
         return True
 
     # support having multiple comma-delimited version criteria
     if "," in version_range:
-        return all([version_matches_range(version, vrange) for vrange in version_range.split(",")])
+        return all(
+            [
+                version_matches_range(version, vrange)
+                for vrange in version_range.split(",")
+            ]
+        )
 
     # extract and normalize version strings
     operator, range_version = re.match(r"([<>=!]*)(\d.*)", version_range).groups()

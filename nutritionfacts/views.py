@@ -36,8 +36,8 @@ def login_required_ajax(function):
     Otherwise return a HttpResponse 401 - authentication required
     instead of the 302 redirect of the original Django decorator
     """
-    def _decorator(view_func):
 
+    def _decorator(view_func):
         def _wrapped_view(request, *args, **kwargs):
             if request.user.is_authenticated:
                 response = view_func(request, *args, **kwargs)
@@ -48,6 +48,7 @@ def login_required_ajax(function):
             response["Access-Control-Allow-Origin"] = "*"
             response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
             return response
+
         return _wrapped_view
 
     return _decorator(function)
@@ -68,7 +69,9 @@ def pingback(request):
 
     # get the client IP address and look up location for it
     ip_address = get_trusted_ip(request) or get_ip(request)
-    iplocation, _ = IPLocation.objects.update_or_create(ip_address=ip_address, defaults=get_ip_info(ip_address))
+    iplocation, _ = IPLocation.objects.update_or_create(
+        ip_address=ip_address, defaults=get_ip_info(ip_address)
+    )
 
     # extract the mode specified in the payload
     mode = payload.get("mode") or ""
@@ -87,7 +90,9 @@ def pingback(request):
         "database_id": payload.get("database_id") or "",
         "node_id": payload.get("node_id") or "",
     }
-    instance, created = Instance.objects.get_or_create(instance_id=instance_id, defaults=defaults)
+    instance, created = Instance.objects.get_or_create(
+        instance_id=instance_id, defaults=defaults
+    )
     if created:
         instance.first_seen = saved_at
     instance.last_seen = saved_at
@@ -255,17 +260,27 @@ def countries(request):
     instances = Instance.objects.all().filter(last_mode="")
 
     ips = IPLocation.objects.filter(pingbacks__mode="")
-    results = ips.values("country_name").annotate(count=Count("pingbacks__instance_id", distinct=True))
+    results = ips.values("country_name").annotate(
+        count=Count("pingbacks__instance_id", distinct=True)
+    )
 
     countries = {}
 
-    for count, country in reversed(sorted([(result["count"], result["country_name"]) for result in results])):
+    for count, country in reversed(
+        sorted([(result["count"], result["country_name"]) for result in results])
+    ):
         if country:
             countries[country] = count
 
     date_from = datetime.datetime.now() - datetime.timedelta(hours=1)
-    pingbacks = Pingback.objects.filter(saved_at__gte=date_from).values("ip__latitude", "ip__longitude")
-    pingback_locations = [{"lat": p["ip__latitude"], "long": p["ip__longitude"]} for p in pingbacks if p["ip__latitude"]]
+    pingbacks = Pingback.objects.filter(saved_at__gte=date_from).values(
+        "ip__latitude", "ip__longitude"
+    )
+    pingback_locations = [
+        {"lat": p["ip__latitude"], "long": p["ip__longitude"]}
+        for p in pingbacks
+        if p["ip__latitude"]
+    ]
 
     return {
         "country_total": len(countries),
@@ -275,7 +290,9 @@ def countries(request):
     }
 
 
-def get_instance_stats_for_frequency(instances, frequency, running_average_weight=0.3, periods=None):
+def get_instance_stats_for_frequency(
+    instances, frequency, running_average_weight=0.3, periods=None
+):
 
     frequency_durations = {
         "day": 24 * 60 * 60,
@@ -288,10 +305,10 @@ def get_instance_stats_for_frequency(instances, frequency, running_average_weigh
     now = timezone.now()
 
     history = list(
-        instances.annotate(start=Trunc('first_seen', frequency))
-                 .values('start')
-                 .annotate(count=Count('instance_id'))
-                 .order_by("start")
+        instances.annotate(start=Trunc("first_seen", frequency))
+        .values("start")
+        .annotate(count=Count("instance_id"))
+        .order_by("start")
     )
 
     # if requested, only include the last X periods
@@ -313,7 +330,9 @@ def get_instance_stats_for_frequency(instances, frequency, running_average_weigh
     # calculate running average
     running_average = history[0]["count"]
     for period in history:
-        running_average = (period["count"] * running_average_weight) + (running_average * (1 - running_average_weight))
+        running_average = (period["count"] * running_average_weight) + (
+            running_average * (1 - running_average_weight)
+        )
         period["start"] = period["start"].date()
         period["running_average"] = int(round(running_average))
 
@@ -342,10 +361,13 @@ def timeline(request):
 @json_response
 def versions(request):
 
-    pingbacks = (Pingback.objects.filter(mode="").annotate(month=Trunc('saved_at', "month"))
-                 .values("month", "kolibri_version")
-                 .annotate(count=Count('instance_id', distinct=True))
-                 .order_by("month"))
+    pingbacks = (
+        Pingback.objects.filter(mode="")
+        .annotate(month=Trunc("saved_at", "month"))
+        .values("month", "kolibri_version")
+        .annotate(count=Count("instance_id", distinct=True))
+        .order_by("month")
+    )
 
     by_month = defaultdict(dict)
 
@@ -359,7 +381,9 @@ def versions(request):
 
     versions = [".".join([str(c) for c in ver]) for ver in sorted(vers)]
 
-    by_version = {ver: [vals.get(ver, 0) for vals in by_month.values()] for ver in versions}
+    by_version = {
+        ver: [vals.get(ver, 0) for vals in by_month.values()] for ver in versions
+    }
 
     colors = [ver[1] - 7 for ver in sorted(vers)]
 
@@ -371,17 +395,22 @@ def versions(request):
     }
 
 
-
 @login_required_ajax
 @json_response
 def migrations(request):
 
-    instances = Instance.objects.filter(last_mode="").annotate(count=Count("pingbacks__ip__country_name", distinct=True)).filter(count__gt=1)
+    instances = (
+        Instance.objects.filter(last_mode="")
+        .annotate(count=Count("pingbacks__ip__country_name", distinct=True))
+        .filter(count__gt=1)
+    )
 
     migrations = {}
     for instance in instances:
         mig = list(instance.pingbacks.values_list("ip__latitude", "ip__longitude"))
-        migrations[instance.instance_id] = ([mig[0]] if mig[0][0] else []) + [mig[i] for i in range(1, len(mig)) if mig[i] != mig[i-1] and mig[i][0]]
+        migrations[instance.instance_id] = ([mig[0]] if mig[0][0] else []) + [
+            mig[i] for i in range(1, len(mig)) if mig[i] != mig[i - 1] and mig[i][0]
+        ]
 
     return migrations
 
@@ -389,4 +418,6 @@ def migrations(request):
 @login_required
 def chart(request):
     domain = request.GET.get("domain", "https://telemetry.learningequality.org")
-    return TemplateResponse(request, "chart.html", {"request": request, "TELEMETRY_DATA_DOMAIN": domain})
+    return TemplateResponse(
+        request, "chart.html", {"request": request, "TELEMETRY_DATA_DOMAIN": domain}
+    )

@@ -11,14 +11,21 @@ for q in bad:
     ip_addresses = tuple(set(t[2] for t in q))
     countries = tuple(set(t[3] for t in q))
     pingbacks = Instance.objects.get(instance_id=instance_id).pingbacks.all()
-    last_seen = [str(pingbacks.filter(mode=mode).order_by("saved_at").last().saved_at.date()) for mode in modes]
+    last_seen = [
+        str(pingbacks.filter(mode=mode).order_by("saved_at").last().saved_at.date())
+        for mode in modes
+    ]
     counts = [pingbacks.filter(mode=mode).count() for mode in modes]
-    ips[instance_id] = {"modes": modes, "counts": counts, "last_seen": last_seen, "ips": ip_addresses, "countries": countries, "action": ""}
-    
+    ips[instance_id] = {
+        "modes": modes,
+        "counts": counts,
+        "last_seen": last_seen,
+        "ips": ip_addresses,
+        "countries": countries,
+        "action": "",
+    }
+
 print(json.dumps(ips, indent=4))
-
-
-
 
 
 for i, d in recs.items():
@@ -38,10 +45,7 @@ for i, d in recs.items():
                     print('    "{}": "{}",'.format(ip, mode))
 
 
-
-
 def printer(indent=0):
-
     def p(msg, ind=0):
         print("\t" * (indent + ind) + msg)
 
@@ -51,7 +55,7 @@ def printer(indent=0):
 def print_instance(instance, indent=0):
 
     p = printer(indent)
-        
+
     p(instance.instance_id)
     p("database_id: " + instance.database_id, ind=1)
     p("platform:    " + instance.platform, ind=1)
@@ -75,13 +79,24 @@ for i, d in recs.items():
             pp("ip:        " + p.ip_id, ind=1)
             pp("city:      " + p.ip.city, ind=1)
             pp("country:   " + p.ip.country_name, ind=1)
-            pp("instances: " + str(Instance.objects.filter(pingbacks__ip_id=p.ip_id).distinct().count()))
-
+            pp(
+                "instances: "
+                + str(
+                    Instance.objects.filter(pingbacks__ip_id=p.ip_id).distinct().count()
+                )
+            )
 
 
 # find all instances that have the same node_id or database_id
 p = printer(indent=0)
-for i in Instance.objects.filter(pingbacks__ip_id="137.110.111.190", last_mode="").distinct():
+for i in Instance.objects.filter(
+    pingbacks__ip_id="137.110.111.190", last_mode=""
+).distinct():
     p(i.instance_id)
-    for ins in (Instance.objects.filter(node_id=i.node_id).exclude(instance_id=i.instance_id) | Instance.objects.filter(database_id=i.database_id).exclude(instance_id=i.instance_id)).distinct():
+    for ins in (
+        Instance.objects.filter(node_id=i.node_id).exclude(instance_id=i.instance_id)
+        | Instance.objects.filter(database_id=i.database_id).exclude(
+            instance_id=i.instance_id
+        )
+    ).distinct():
         print_instance(ins, indent=1)
