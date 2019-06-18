@@ -247,6 +247,11 @@ class Message(models.Model):
     )
     i18n = JSONField(default=dict)
 
+    def english_message(self):
+        if "en" not in self.i18n:
+            return ""
+        return "{title}: {msg}".format(**self.i18n["en"])
+
     def clean(self):
         if "en" not in self.i18n:
             raise ValidationError("i18n field must contain at least 'en' key")

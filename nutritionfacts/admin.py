@@ -184,6 +184,7 @@ admin.site.register(IPLocation, IPLocationAdmin)
 
 class MessageAdmin(admin.ModelAdmin):
     list_display = ("msg_id", "timestamp", "version_range", "status", "english_message")
+    list_editable = ("status",)
     list_filter = ("status",)
     date_hierarchy = "timestamp"
 
