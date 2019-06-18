@@ -1,5 +1,10 @@
+import datetime
+import uuid
+
 from django.contrib.postgres.fields import ArrayField, JSONField
+from django.core.exceptions import ValidationError
 from django.db import models
+from enum import Enum
 
 from . import mode_mappings
 
@@ -199,10 +204,44 @@ class FacilityStatistics(models.Model):
     sess_anon_time = models.IntegerField(blank=True, null=True)
 
 
+class MessageStatuses(Enum):
+    DISABLED = "Disabled"
+    STAGED = "Staged"
+    ACTIVE = "Active"
+
+
 class Message(models.Model):
-    msg_id = models.CharField(max_length=50, primary_key=True)
-    timestamp = models.DateField()
+    msg_id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    timestamp = models.DateField(default=datetime.date.today)
     version_range = models.CharField(max_length=50, default="*")
-    link_url = models.CharField(max_length=150, blank=True)
-    active = models.BooleanField(default=True)
+    link_url = models.CharField(max_length=250, blank=True)
+    status = models.CharField(
+        max_length=15,
+        choices=[(c.name, c.value) for c in MessageStatuses],
+        default=MessageStatuses.DISABLED.name,
+    )
     i18n = JSONField(default=dict)
+
+    def clean(self):
+        if "en" not in self.i18n:
+            raise ValidationError("i18n field must contain at least 'en' key")
+        for langdata in self.i18n.values():
+            if set(langdata.keys()) != set(["msg", "title", "link_text"]):
+                raise ValidationError(
+                    "Each language object in i18n field must have exactly these keys: 'msg', 'title', 'link_text'"
+                )
+            if not isinstance(langdata["msg"], str):
+                raise ValidationError(
+                    "'msg' field in language objects under i18n field must contain a string"
+                )
+            if not isinstance(langdata["title"], str):
+                raise ValidationError(
+                    "'title' field in language objects under i18n field must contain a string"
+                )
+            if (
+                not isinstance(langdata["link_text"], str)
+                and langdata["link_text"] is not None
+            ):
+                raise ValidationError(
+                    "'link_text' field in language objects under i18n field must contain a string or 'null'"
+                )

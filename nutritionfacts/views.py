@@ -15,7 +15,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .geo import get_ip_info
-from .models import Pingback, IPLocation, Instance, ChannelStatistics, FacilityStatistics, Message, StatisticsPingback
+from .models import (
+    Pingback,
+    IPLocation,
+    Instance,
+    ChannelStatistics,
+    FacilityStatistics,
+    Message,
+    StatisticsPingback,
+    MessageStatuses,
+)
 from .decorators import json_response
 from .utils import load_zipped_json, version_matches_range
 
@@ -103,24 +112,66 @@ def pingback(request):
     if version_matches_range(kolibri_version, "<0.11.0"):
         return HttpResponse("")
 
-    # get all messages that are version-based and match the version that pinged us
-    message_queryset = Message.objects.filter(active=True).exclude(version_range="").values("msg_id", "version_range", "link_url", "i18n", "timestamp")
-    messages = [msg for msg in message_queryset if version_matches_range(kolibri_version, msg["version_range"])]
-
-    # add any test messages as needed
-    if mode.startswith("msg-"):
-        messages.append({
-            "msg_id": mode,
-            "version_range": "",
-            "link_url": "https://www.latlmes.com/arts/return-of-the-golden-age-of-comics-1",
-            "i18n": {
-                "en": {"link_text": "More information...", "msg": "You are now running with mode '{}'!".format(mode), "title": "Important!"},
-                "es-es": {"link_text": "Más información...", "msg": "¡Ahora estás corriendo con el modo '{}'!".format(mode), "title": "¡Importante!"},
-            },
-            "timestamp": datetime.date.today(),
-        })
+    messages = get_relevant_messages(mode=mode, version=kolibri_version)
 
     return {"id": pingback.id, "messages": messages}
+
+
+def get_relevant_messages(mode, version):
+
+    allowed_statuses = [MessageStatuses.ACTIVE.name]
+
+    # enable "staged" messages to be shown
+    STAGING_PREFIX = "staged-msgs"
+    if mode.startswith(STAGING_PREFIX):
+        allowed_statuses.append(MessageStatuses.STAGED.name)
+
+    # set the version to a specified value with something like "staged-msgs-ver-0.12.3"
+    STAGING_VER_PREFIX = STAGING_PREFIX + "-ver-"
+    if mode.startswith(STAGING_VER_PREFIX):
+        version = mode[len(STAGING_VER_PREFIX) :]
+
+    # get all messages that are version-based and match the provided version
+    message_queryset = (
+        Message.objects.filter(status__in=allowed_statuses)
+        .exclude(version_range="")
+        .values("msg_id", "version_range", "link_url", "i18n", "timestamp")
+    )
+    messages = [
+        msg
+        for msg in message_queryset
+        if version_matches_range(version, msg["version_range"])
+    ]
+
+    # add the old test messages as needed
+    if mode.startswith("msg-"):
+        messages.append(
+            {
+                "msg_id": mode,
+                "version_range": "",
+                "link_url": "https://www.latlmes.com/arts/return-of-the-golden-age-of-comics-1",
+                "i18n": {
+                    "en": {
+                        "link_text": "More information...",
+                        "msg": "You are now running with mode '{}'!".format(mode),
+                        "title": "Important!",
+                    },
+                    "es-es": {
+                        "link_text": "Más información...",
+                        "msg": "¡Ahora estás corriendo con el modo '{}'!".format(mode),
+                        "title": "¡Importante!",
+                    },
+                },
+                "timestamp": datetime.date.today(),
+            }
+        )
+
+    # if showing staging messages for testing, remove version spec from response so it always gets shown
+    if mode.startswith(STAGING_PREFIX):
+        for message in messages:
+            message["version_range"] = "*"
+
+    return messages
 
 
 @csrf_exempt
