@@ -24,9 +24,15 @@ from .models import (
     Message,
     StatisticsPingback,
     MessageStatuses,
+    BirthYearStats,
+    GenderCount,
+    GenderStats,
 )
 from .decorators import json_response
 from .utils import load_zipped_json, version_matches_range
+
+# matches with kolibri gender constants
+GENDER_MAPPING = {"m": "MALE", "f": "FEMALE", "ns": "NOT_SPECIFIED", "d": "DEFERRED"}
 
 
 def login_required_ajax(function):
@@ -179,6 +185,31 @@ def get_relevant_messages(mode, version):
     return messages
 
 
+def get_and_create_demographic_objects(data, learner=True):
+    birth_year_stats = gender_stats = None
+    if data:
+        bys = data["bys"]
+        birth_year_stats = BirthYearStats.objects.create(
+            average=bys["a"],
+            variance=bys["v"],
+            total_specified=bys["ts"],
+            deferred_count=bys["d"],
+            is_learner=learner,
+        )
+        gs = data["gs"]
+        gender_stats = GenderStats.objects.create(is_learner=learner)
+        for key in gs:
+            count = gs[key].get("count")
+            # only create gender count if we have useful metrics
+            if count:
+                GenderCount.objects.create(
+                    gender=GENDER_MAPPING.get(key, "UNKNOWN"),
+                    count=count,
+                    genderstats=gender_stats,
+                )
+    return birth_year_stats, gender_stats
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 @json_response
@@ -201,6 +232,14 @@ def statistics(request):
     facilities = payload.get("f", [])
 
     for channel in channels:
+        (
+            birth_year_stats_learners,
+            gender_stats_learners,
+        ) = get_and_create_demographic_objects(channel.get("dsl"), learner=True)
+        (
+            birth_year_stats_non_learners,
+            gender_stats_non_learners,
+        ) = get_and_create_demographic_objects(channel.get("dsnl"), learner=False)
         ChannelStatistics.objects.create(
             pingback=pingback,
             statspingback=statspingback,
@@ -217,9 +256,21 @@ def statistics(request):
             sess_anon_count=channel.get("sac"),
             sess_user_time=channel.get("sut"),
             sess_anon_time=channel.get("sat"),
+            birth_year_stats_learners=birth_year_stats_learners,
+            birth_year_stats_non_learners=birth_year_stats_non_learners,
+            gender_stats_learners=gender_stats_learners,
+            gender_stats_non_learners=gender_stats_non_learners,
         )
 
     for facility in facilities:
+        (
+            birth_year_stats_learners,
+            gender_stats_learners,
+        ) = get_and_create_demographic_objects(facility.get("dsl"), learner=True)
+        (
+            birth_year_stats_non_learners,
+            gender_stats_non_learners,
+        ) = get_and_create_demographic_objects(facility.get("dsnl"), learner=False)
         FacilityStatistics.objects.create(
             pingback=pingback,
             statspingback=statspingback,
@@ -243,6 +294,10 @@ def statistics(request):
             sess_anon_count=facility.get("sac"),
             sess_user_time=facility.get("sut"),
             sess_anon_time=facility.get("sat"),
+            birth_year_stats_learners=birth_year_stats_learners,
+            birth_year_stats_non_learners=birth_year_stats_non_learners,
+            gender_stats_learners=gender_stats_learners,
+            gender_stats_non_learners=gender_stats_non_learners,
         )
 
     return {"messages": []}
