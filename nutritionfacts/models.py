@@ -158,7 +158,7 @@ class StatisticsPingback(models.Model):
 
 class BirthYearStats(models.Model):
     average = models.FloatField(blank=True, null=True)
-    variance = models.FloatField(blank=True, null=True)
+    standard_deviation = models.FloatField(blank=True, null=True)
     total_specified = models.IntegerField(blank=True, null=True)
     deferred_count = models.IntegerField(blank=True, null=True)
     is_learner = models.BooleanField()
@@ -169,7 +169,7 @@ class GenderStats(models.Model):
 
 
 class GenderCount(models.Model):
-    gender = models.CharField(max_length=30, blank=True)
+    gender = models.CharField(max_length=100, blank=True)
     count = models.IntegerField(blank=True, null=True)
     genderstats = models.ForeignKey(GenderStats, on_delete=models.CASCADE)
 
