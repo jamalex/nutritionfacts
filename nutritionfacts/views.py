@@ -25,7 +25,6 @@ from .models import (
     StatisticsPingback,
     MessageStatuses,
     BirthYearStats,
-    GenderCount,
     GenderStats,
 )
 from .decorators import json_response
@@ -182,7 +181,7 @@ def get_relevant_messages(mode, version):
     return messages
 
 
-def get_and_create_demographic_objects(data, learner=True):
+def get_and_create_demographic_objects(data):
     birth_year_stats = gender_stats = None
     if data:
         bys = data["bys"]
@@ -191,15 +190,11 @@ def get_and_create_demographic_objects(data, learner=True):
             standard_deviation=bys["sd"],
             total_specified=bys["ts"],
             deferred_count=bys["d"],
-            is_learner=learner,
+            not_specified_count=bys["ns"],
         )
-        gs = data["gs"]
-        if gs:
-            gender_stats = GenderStats.objects.create(is_learner=learner)
-            for key in gs:
-                GenderCount.objects.create(
-                    gender=key, count=gs[key]["count"], genderstats=gender_stats,
-                )
+        gc = data["gc"]
+        if gc:
+            gender_stats = GenderStats.objects.create(gender_counts=gc)
     return birth_year_stats, gender_stats
 
 
@@ -228,11 +223,11 @@ def statistics(request):
         (
             birth_year_stats_learners,
             gender_stats_learners,
-        ) = get_and_create_demographic_objects(channel.get("dsl"), learner=True)
+        ) = get_and_create_demographic_objects(channel.get("dsl"))
         (
             birth_year_stats_non_learners,
             gender_stats_non_learners,
-        ) = get_and_create_demographic_objects(channel.get("dsnl"), learner=False)
+        ) = get_and_create_demographic_objects(channel.get("dsnl"))
         ChannelStatistics.objects.create(
             pingback=pingback,
             statspingback=statspingback,
@@ -259,11 +254,11 @@ def statistics(request):
         (
             birth_year_stats_learners,
             gender_stats_learners,
-        ) = get_and_create_demographic_objects(facility.get("dsl"), learner=True)
+        ) = get_and_create_demographic_objects(facility.get("dsl"))
         (
             birth_year_stats_non_learners,
             gender_stats_non_learners,
-        ) = get_and_create_demographic_objects(facility.get("dsnl"), learner=False)
+        ) = get_and_create_demographic_objects(facility.get("dsnl"))
         FacilityStatistics.objects.create(
             pingback=pingback,
             statspingback=statspingback,

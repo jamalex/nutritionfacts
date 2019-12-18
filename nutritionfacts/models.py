@@ -148,7 +148,6 @@ class IPLocation(models.Model):
 
 
 class StatisticsPingback(models.Model):
-
     # extra metadata to support debugging of
     # https://sentry.io/organizations/learningequality/issues/858657624/
     ip_address = models.CharField(max_length=45)
@@ -161,17 +160,11 @@ class BirthYearStats(models.Model):
     standard_deviation = models.FloatField(blank=True, null=True)
     total_specified = models.IntegerField(blank=True, null=True)
     deferred_count = models.IntegerField(blank=True, null=True)
-    is_learner = models.BooleanField()
+    not_specified_count = models.IntegerField(blank=True, null=True)
 
 
 class GenderStats(models.Model):
-    is_learner = models.BooleanField()
-
-
-class GenderCount(models.Model):
-    gender = models.CharField(max_length=100, blank=True)
-    count = models.IntegerField(blank=True, null=True)
-    genderstats = models.ForeignKey(GenderStats, on_delete=models.CASCADE)
+    gender_counts = JSONField(default=dict)
 
 
 class ChannelStatistics(models.Model):
