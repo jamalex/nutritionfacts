@@ -148,12 +148,23 @@ class IPLocation(models.Model):
 
 
 class StatisticsPingback(models.Model):
-
     # extra metadata to support debugging of
     # https://sentry.io/organizations/learningequality/issues/858657624/
     ip_address = models.CharField(max_length=45)
     saved_at = models.DateTimeField(blank=True)
     pingback = models.ForeignKey(Pingback, on_delete=models.PROTECT)
+
+
+class BirthYearStats(models.Model):
+    average = models.FloatField(blank=True, null=True)
+    standard_deviation = models.FloatField(blank=True, null=True)
+    total_specified = models.IntegerField(blank=True, null=True)
+    deferred_count = models.IntegerField(blank=True, null=True)
+    not_specified_count = models.IntegerField(blank=True, null=True)
+
+
+class GenderStats(models.Model):
+    gender_counts = JSONField(default=dict)
 
 
 class ChannelStatistics(models.Model):
@@ -186,6 +197,36 @@ class ChannelStatistics(models.Model):
     sess_anon_count = models.IntegerField(blank=True, null=True)
     sess_user_time = models.IntegerField(blank=True, null=True)
     sess_anon_time = models.IntegerField(blank=True, null=True)
+
+    # demographic info
+    birth_year_stats_learners = models.ForeignKey(
+        BirthYearStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="channel_birthyearstats_learner",
+    )
+    birth_year_stats_non_learners = models.ForeignKey(
+        BirthYearStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="channel_birthyearstats_nonlearner",
+    )
+    gender_stats_learners = models.ForeignKey(
+        GenderStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="channel_genderstats_learner",
+    )
+    gender_stats_non_learners = models.ForeignKey(
+        GenderStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="channel_genderstats_nonlearner",
+    )
 
 
 class FacilityStatistics(models.Model):
@@ -227,6 +268,36 @@ class FacilityStatistics(models.Model):
     sess_anon_count = models.IntegerField(blank=True, null=True)
     sess_user_time = models.IntegerField(blank=True, null=True)
     sess_anon_time = models.IntegerField(blank=True, null=True)
+
+    # demographic info
+    birth_year_stats_learners = models.ForeignKey(
+        BirthYearStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="facility_birthyearstats_learner",
+    )
+    birth_year_stats_non_learners = models.ForeignKey(
+        BirthYearStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="facility_birthyearstats_nonlearner",
+    )
+    gender_stats_learners = models.ForeignKey(
+        GenderStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="facility_genderstats_learner",
+    )
+    gender_stats_non_learners = models.ForeignKey(
+        GenderStats,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="facility_genderstats_nonlearner",
+    )
 
 
 class MessageStatuses(Enum):
