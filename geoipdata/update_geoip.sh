@@ -2,7 +2,7 @@
 
 cd "$(dirname "$0")"
 
-wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
+wget "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=k6NcBvYRk76uZyhw&suffix=tar.gz" -O GeoLite2-City.tar.gz
 
 tar -zxvf GeoLite2-City.tar.gz --strip=1
 
