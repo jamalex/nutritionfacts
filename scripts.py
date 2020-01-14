@@ -60,7 +60,7 @@ sorted(FacilityStatistics.objects.filter(pingback__mode="").values("facility_id"
 
 
 # how many per country for a particular day?
-Instance.objects.filter(first_seen__year=2019, first_seen__month=1, first_seen__day=4, last_mode="").values("pingbacks__ip__country_name").order_by("pingbacks__ip__country_name").annotate(count=Count("instance_id", distinct=True)).order_by("-count")
+Instance.objects.filter(first_seen__year=2019, first_seen__month=1, first_seen__day=4, last_mode="").values("pingbacks__ip__country_name").annotate(count=Count("instance_id", distinct=True)).order_by("-count")
 
 Instance.objects.filter(first_seen__year=2019, first_seen__month=1, first_seen__day=4, last_mode="", pingbacks__ip__country_name="Nepal").values("pingbacks__ip_id")
 

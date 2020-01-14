@@ -29,6 +29,7 @@ from .models import (
 )
 from .decorators import json_response
 from .utils import load_zipped_json, version_matches_range
+from .analysis import region_counts_by_quarter
 
 
 def login_required_ajax(function):
@@ -325,11 +326,19 @@ def countries(request):
         if p["ip__latitude"]
     ]
 
+    quarters, country_by_quarter = region_counts_by_quarter(grouping="country")
+    quarters, continent_by_quarter = region_counts_by_quarter(grouping="continent")
+
     return {
         "country_total": len(countries),
         "instance_total": instances.count(),
-        "last_hour_locations": pingback_locations,
         "country_counts": countries,
+        "by_quarter": {
+            "quarters": quarters,
+            "countries": country_by_quarter,
+            "continents": continent_by_quarter,
+        },
+        "last_hour_locations": pingback_locations,
     }
 
 
