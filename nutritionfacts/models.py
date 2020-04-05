@@ -33,7 +33,7 @@ class Pingback(models.Model):
     kolibri_version = models.CharField(max_length=50)
 
     # What installer type was used to install Kolibri
-    installer = models.CharField(max_length=30, blank=True)
+    installer = models.CharField(max_length=80, blank=True)
 
     # The "mode" the Kolibri instance is running in (e.g. "source", "demo", "production")
     mode = models.CharField(max_length=30, blank=True)

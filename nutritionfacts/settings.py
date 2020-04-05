@@ -93,6 +93,10 @@ DATABASES = {
     }
 }
 
+if not DATABASES["default"]["PASSWORD"]:
+    del DATABASES["default"]["PASSWORD"]
+    del DATABASES["default"]["HOST"]
+    del DATABASES["default"]["PORT"]
 
 # Password validation
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-password-validators
