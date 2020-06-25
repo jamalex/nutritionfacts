@@ -198,7 +198,7 @@ class ChannelStatistics(models.Model):
     sess_user_time = models.IntegerField(blank=True, null=True)
     sess_anon_time = models.IntegerField(blank=True, null=True)
 
-    # demographic info
+    # demographic info (added in 0.13)
     birth_year_stats_learners = models.ForeignKey(
         BirthYearStats,
         on_delete=models.PROTECT,
@@ -227,6 +227,11 @@ class ChannelStatistics(models.Model):
         null=True,
         related_name="channel_genderstats_nonlearner",
     )
+
+    # added in 0.14
+    sess_anon_count_no_visitor_id = models.IntegerField(blank=True, null=True)
+    users_with_logs = models.IntegerField(blank=True, null=True)
+    anon_visitors_with_logs = models.IntegerField(blank=True, null=True)
 
 
 class FacilityStatistics(models.Model):
@@ -269,7 +274,7 @@ class FacilityStatistics(models.Model):
     sess_user_time = models.IntegerField(blank=True, null=True)
     sess_anon_time = models.IntegerField(blank=True, null=True)
 
-    # demographic info
+    # demographic info (added in 0.13)
     birth_year_stats_learners = models.ForeignKey(
         BirthYearStats,
         on_delete=models.PROTECT,
@@ -298,6 +303,13 @@ class FacilityStatistics(models.Model):
         null=True,
         related_name="facility_genderstats_nonlearner",
     )
+
+    # added in 0.14
+    class_count = models.IntegerField(blank=True, null=True)
+    group_count = models.IntegerField(blank=True, null=True)
+    sess_anon_count_no_visitor_id = models.IntegerField(blank=True, null=True)
+    users_with_logs = models.IntegerField(blank=True, null=True)
+    anon_visitors_with_logs = models.IntegerField(blank=True, null=True)
 
 
 class MessageStatuses(Enum):
