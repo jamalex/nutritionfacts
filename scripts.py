@@ -86,3 +86,123 @@ mean(sorted(facilitystats.values("facility_id").annotate(Max("learners_count")).
 # average number of anonymous content sessions per pinging facility
 mean(sorted(facilitystats.values("facility_id").annotate(Max("sess_anon_count")).values_list("sess_anon_count__max", flat=True)))
 
+
+from nutritionfacts.analysis import *
+import io, csv
+
+quarters, countries = region_counts_by_quarter()
+s = io.StringIO()
+writer = csv.writer(s)
+writer.writerow([""] + quarters)
+for country, counts in countries.items():
+	writer.writerow([country] + counts)
+print(s.getvalue())
+
+quarters, continents = region_counts_by_quarter(grouping="continent")
+s = io.StringIO()
+writer = csv.writer(s)
+writer.writerow([""] + quarters)
+for continent, counts in continents.items():
+	writer.writerow([continent] + counts)
+print(s.getvalue())
+
+
+
+# check the IPs and times of pingbacks in UK today
+for i in Instance.objects.filter(first_seen__year=2020, first_seen__month=2, first_seen__day=24, last_mode="", pingbacks__ip__country_name="United Kingdom"):
+    print(i.database_id, i.node_id, i.first_seen, i.pingbacks.first().ip_id)
+
+# check the pingbacks from this IP, and see the interval between them
+ot = None
+times = []
+for p in Pingback.objects.filter(ip_id="90.252.62.102").order_by("saved_at"):
+    s = p.statisticspingback_set.all()
+    fs = s[0].facilitystatistics_set.count() if s else 0
+    cs = s[0].channelstatistics_set.count() if s else 0
+    if ot:
+        times.append((p.saved_at - ot).seconds)
+        print(times[-1])
+    print(p.instance.database_id, p.instance.node_id, p.saved_at, fs, cs)
+    ot = p.saved_at
+times = [t for t in times if t < 1000]
+print("New device every {} seconds".format(sum(times) / len(times)))
+
+
+
+from collections import defaultdict
+
+# facility stats object for each facility that has the highest number of learners for that facility
+all_fstats = FacilityStatistics.objects.filter(pingback__mode="")
+largest_fstats = all_fstats.order_by("facility_id", "-learners_count", "-pingback__saved_at").distinct("facility_id")
+# total learners:
+# sum([fs.learners_count for fs in largest_fstats])
+
+
+# CALCULATING GENDERS
+
+def get_gender_counts(learners=True):
+
+    # count genders
+    counts = defaultdict(int)
+    for fstat in largest_fstats:
+        gs = fstat.gender_stats_learners if learners else fstat.gender_stats_non_learners
+        new_counts = gs.gender_counts if gs else {}
+        for key, val in new_counts.items():
+            counts[key] += val
+
+    return dict(counts)
+
+lgc = get_gender_counts(learners=True)
+print("Learner gender counts:", lgc)
+print("Percent female: {}%".format(int(round((100 * lgc["FEMALE"]) / (lgc["FEMALE"] + lgc["MALE"])))))
+print("--")
+nlgc = get_gender_counts(learners=False)
+print("Non-learner gender counts:", nlgc)
+print("Percent female: {}%".format(int(round((100 * nlgc["FEMALE"]) / (nlgc["FEMALE"] + nlgc["MALE"])))))
+
+
+
+# CALCULATING AGES
+
+from math import erf, sqrt
+
+def phi(x):
+    return (1.0 + erf(x / sqrt(2.0))) / 2.0
+
+def zscore(average, standard_deviation, value):
+    return (value - average) / (standard_deviation + 0.00001)
+
+def portion_between(average, standard_deviation, lower, upper):
+    return phi(zscore(average, standard_deviation, upper)) - phi(zscore(average, standard_deviation, lower))
+
+age_bins = ((0, 18), (18, 24), (25, 34), (35, 44), (45, 54), (55, 64), (65, 100))
+
+
+def get_age_counts(learners=True, current_year=2020, age_bins=age_bins):
+
+    year_bins = [(current_year - upper, current_year - lower) for lower, upper in age_bins]
+
+    # count birth years
+    counts = [0] * len(year_bins)
+    for fstat in largest_fstats:
+        bys = fstat.birth_year_stats_learners if learners else fstat.birth_year_stats_non_learners
+        if not bys or not bys.total_specified:
+            continue
+        for i, binrange in enumerate(year_bins):
+            lower, upper = binrange
+            new_count = bys.total_specified * portion_between(bys.average, bys.standard_deviation, lower, upper)
+            counts[i] += new_count
+
+    return list(map(int, counts))
+
+lac = get_age_counts(learners=True)
+lacsum = sum(lac)
+print("Learner age counts:", lac)
+for count, age_bin in zip(lac, age_bins):
+    print("Learners between {} and {}: {} ({}%)".format(age_bin[0], age_bin[1], count, int(round(100 * count / lacsum))))
+print("--")
+nlac = get_age_counts(learners=False)
+nlacsum = sum(nlac)
+print("Non-learner age counts:", nlac)
+for count, age_bin in zip(nlac, age_bins):
+    print("Non-learners between {} and {}: {} ({}%)".format(age_bin[0], age_bin[1], count, int(round(100 * count / nlacsum))))
