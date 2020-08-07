@@ -322,6 +322,8 @@ class Message(models.Model):
     msg_id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
     timestamp = models.DateField(default=datetime.date.today)
     version_range = models.CharField(max_length=50, default="*")
+    ips_to_include = ArrayField(models.CharField(max_length=40), help_text="(comma-separated; leave empty to ignore IP)", default=list, blank=True)
+    instances_to_include = ArrayField(models.CharField(max_length=40), help_text="(comma-separated; leave empty to ignore instance_id)", default=list, blank=True)
     link_url = models.CharField(max_length=250, blank=True)
     status = models.CharField(
         max_length=15,

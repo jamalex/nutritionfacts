@@ -6,7 +6,7 @@ import socket
 
 @functools.lru_cache(maxsize=None)
 def get_reader():
-    return geoip2.database.Reader("/app/geoipdata/GeoLite2-City.mmdb")
+    return geoip2.database.Reader("geoipdata/GeoLite2-City.mmdb")
 
 
 def get_ip_info(ip):

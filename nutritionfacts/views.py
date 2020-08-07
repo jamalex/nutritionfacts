@@ -120,12 +120,12 @@ def pingback(request):
     if version_matches_range(kolibri_version, "<0.11.0"):
         return HttpResponse("")
 
-    messages = get_relevant_messages(mode=mode, version=kolibri_version)
+    messages = get_relevant_messages(mode=mode, version=kolibri_version, ip=ip_address, instance_id=instance.instance_id)
 
     return {"id": pingback.id, "messages": messages}
 
 
-def get_relevant_messages(mode, version):
+def get_relevant_messages(mode, version, ip, instance_id):
 
     allowed_statuses = [MessageStatuses.ACTIVE.name]
 
@@ -143,12 +143,14 @@ def get_relevant_messages(mode, version):
     message_queryset = (
         Message.objects.filter(status__in=allowed_statuses)
         .exclude(version_range="")
-        .values("msg_id", "version_range", "link_url", "i18n", "timestamp")
+        .values("msg_id", "version_range", "link_url", "i18n", "timestamp", "ips_to_include", "instances_to_include")
     )
     messages = [
         msg
         for msg in message_queryset
         if version_matches_range(version, msg["version_range"])
+        and ((not msg["ips_to_include"]) or (ip in msg["ips_to_include"]))
+        and ((not msg["instances_to_include"]) or (instance_id in msg["instances_to_include"]))
     ]
 
     # add the old test messages as needed
